@@ -10,6 +10,8 @@ source test/test_range.vim
 source test/test_actions.vim
 source test/test_hints.vim
 source test/test_lifecycle.vim
+source test/test_lsp_pipeline.vim
+source test/test_lsp_adapter.vim
 
 if !empty(v:errors)
   call writefile(v:errors, '/dev/stderr')

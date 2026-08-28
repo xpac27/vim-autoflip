@@ -79,7 +79,7 @@ export def Validate(
     limit: number): dict<any>
   if type(hint) != v:t_dict || get(hint, 'kind', 0) != 1
       || !rangeutil.PositionIn(requested, get(hint, 'position', {}))
-  
+
     return {}
   endif
   var replacement = TypeLabel(get(hint, 'label', ''), limit)

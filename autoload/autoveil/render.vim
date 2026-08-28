@@ -16,9 +16,18 @@ export def CaptureWindow(winid: number, state: dict<any>)
   if winid <= 0 || win_id2win(winid) == 0 || has_key(state.windows, string(winid))
     return
   endif
+  var conceallevel = getwinvar(winid, '&conceallevel')
+  var concealcursor = getwinvar(winid, '&concealcursor')
+  # A split made from an already-rendering window inherits our temporary
+  # values.  Its restoration baseline must be the source window's baseline.
+  if !empty(state.windows) && conceallevel == 3 && concealcursor ==# 'niv'
+    var baseline = values(state.windows)[0]
+    conceallevel = baseline.conceallevel
+    concealcursor = baseline.concealcursor
+  endif
   state.windows[string(winid)] = {
-    conceallevel: getwinvar(winid, '&conceallevel'),
-    concealcursor: getwinvar(winid, '&concealcursor'),
+    conceallevel: conceallevel,
+    concealcursor: concealcursor,
     match_ids: [],
   }
 enddef
@@ -122,4 +131,3 @@ enddef
 export def PropertyNames(): list<string>
   return [AUTO_PROP, DEDUCED_PROP]
 enddef
-

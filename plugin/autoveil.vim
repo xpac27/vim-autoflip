@@ -14,6 +14,7 @@ g:autoveil_max_visible_lines = get(g:, 'autoveil_max_visible_lines', 300)
 g:autoveil_type_name_limit = get(g:, 'autoveil_type_name_limit', 80)
 
 import autoload 'autoveil/core.vim' as core
+import autoload 'autoveil/lsp.vim' as lsp
 
 command! -bar AutoVeilEnable core.Enable()
 command! -bar AutoVeilDisable core.Disable()
@@ -37,5 +38,5 @@ augroup autoveil
   autocmd BufWipeout * core.OnBufferWipeout(str2nr(expand('<abuf>')))
   autocmd WinClosed * core.OnWindowClosed(str2nr(expand('<afile>')))
   autocmd User lsp_buffer_enabled,lsp_diagnostics_updated core.OnLspEvent()
+  autocmd User lsp_setup lsp.Initialize()
 augroup END
-

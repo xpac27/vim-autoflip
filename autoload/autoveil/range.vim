@@ -28,6 +28,14 @@ export def ByteCol(bufnr: number, line0: number, utf16_col: number): number
   return units == utf16_col ? strlen(text) + 1 : -1
 enddef
 
+export def Utf16Length(text: string): number
+  var units = 0
+  for char in split(text, '\zs')
+    units += char2nr(char) > 0xffff ? 2 : 1
+  endfor
+  return units
+enddef
+
 export def ByteRange(bufnr: number, lsp_range: dict<any>): dict<any>
   if type(lsp_range) != v:t_dict
       || type(get(lsp_range, 'start', 0)) != v:t_dict
@@ -41,7 +49,7 @@ export def ByteRange(bufnr: number, lsp_range: dict<any>): dict<any>
       || type(get(finish, 'line', '')) != v:t_number
       || type(get(finish, 'character', '')) != v:t_number
       || start.line != finish.line
-  
+
     return {}
   endif
   var start_col = ByteCol(bufnr, start.line, start.character)
@@ -75,4 +83,3 @@ export def PositionIn(requested: dict<any>, position: dict<any>): bool
   endif
   return Contains(requested, {start: position, end: position})
 enddef
-

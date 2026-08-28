@@ -1,16 +1,20 @@
 vim9script
 
 import autoload 'autoveil/render.vim' as render
+import autoload 'autoveil/actions.vim' as actions
+import autoload 'autoveil/hints.vim' as hints
+import autoload 'autoveil/lsp.vim' as lsp
+import autoload 'autoveil/range.vim' as rangeutil
 
 const MODES = ['prefer-auto', 'show-deduced-types']
 const CPP_FILETYPES = ['c', 'cpp']
 
-def NewState(): dict<any>
+def NewState(bufnr: number): dict<any>
   return {
     enabled: false,
     mode: get(g:, 'autoveil_mode', 'prefer-auto'),
     generation: 0,
-    changedtick: b:changedtick,
+    changedtick: getbufvar(bufnr, 'changedtick'),
     pending_timer: -1,
     views: {},
     windows: {},
@@ -24,7 +28,7 @@ enddef
 export def State(bufnr: number = bufnr('%')): dict<any>
   var state = getbufvar(bufnr, 'autoveil_state', {})
   if empty(state) && bufexists(bufnr)
-    state = NewState()
+    state = NewState(bufnr)
     setbufvar(bufnr, 'autoveil_state', state)
   endif
   return state
@@ -42,16 +46,11 @@ def StopTimer(state: dict<any>, key: string)
   state[key] = -1
 enddef
 
-def CurrentWindowFor(bufnr: number): number
-  return bufnr == bufnr('%') ? win_getid() : -1
-enddef
-
 export def Enable()
   var bufnr = bufnr('%')
   var state = State(bufnr)
   if state.enabled
     render.CaptureWindow(win_getid(), state)
-    render.ConfigureWindow(win_getid(), state)
     return
   endif
   if !SupportedFeatures()
@@ -73,7 +72,7 @@ export def Enable()
   state.changedtick = b:changedtick
   state.status = 'enabled; waiting for refresh'
   render.CaptureWindow(win_getid(), state)
-  render.ConfigureWindow(win_getid(), state)
+  lsp.Initialize()
   Refresh(false)
 enddef
 
@@ -116,15 +115,111 @@ export def SetMode(mode: string)
 enddef
 
 export def Refresh(force: bool = false)
+  var bufnr = bufnr('%')
   var state = State()
   if !state.enabled
     return
   endif
   StopTimer(state, 'pending_timer')
   state.revealed = false
-  state.status = force ? 'enabled; refresh requested' : 'enabled; refresh scheduled'
-  # The LSP request pipeline is installed in the adapter phase.
-  render.Render(bufnr('%'), state, values(state.views))
+  if mode() =~# '^i' || pumvisible()
+    state.status = 'paused: insert or completion menu active'
+    return
+  endif
+  if !lsp.DependencyAvailable()
+    state.status = 'waiting: vim-lsp is not installed'
+    render.Render(bufnr, state, values(state.views))
+    return
+  endif
+  lsp.Initialize()
+  if !lsp.IsAttached(bufnr)
+    state.status = 'waiting: no running clangd server is attached'
+    render.Render(bufnr, state, values(state.views))
+    return
+  endif
+  if state.mode ==# 'prefer-auto' && !lsp.SupportsCodeAction(bufnr)
+    state.status = 'waiting: clangd does not advertise code actions'
+    return
+  endif
+  if state.mode ==# 'show-deduced-types' && !lsp.SupportsInlayHints(bufnr)
+    state.status = 'waiting: clangd does not advertise inlay hints'
+    return
+  endif
+  var requested = VisibleRange()
+  state.generation += 1
+  state.changedtick = b:changedtick
+  var generation = state.generation
+  var changedtick = state.changedtick
+  var request_mode = state.mode
+  state.status = force ? 'enabled; refresh requested' : 'enabled; request pending'
+  var Callback = (response) => HandleReply(bufnr, generation, changedtick,
+    request_mode, requested, response)
+  if request_mode ==# 'prefer-auto'
+    lsp.RequestCodeActions(bufnr, requested, Callback)
+  else
+    lsp.RequestInlayHints(bufnr, requested, Callback)
+  endif
+enddef
+
+def VisibleRange(): dict<any>
+  var first = max([1, line('w0') - 5])
+  var last = min([line('$'), line('w$') + 5])
+  var maximum = max([1, get(g:, 'autoveil_max_visible_lines', 300)])
+  if last - first + 1 > maximum
+    last = first + maximum - 1
+  endif
+  var last_line = getline(last)
+  return {
+    start: {line: first - 1, character: 0},
+    end: {line: last - 1, character: rangeutil.Utf16Length(last_line)},
+  }
+enddef
+
+def ViewInside(view: dict<any>, requested: dict<any>): bool
+  var line0 = view.lnum - 1
+  return line0 >= requested.start.line && line0 <= requested.end.line
+enddef
+
+def HandleReply(
+    bufnr: number,
+    generation: number,
+    changedtick: number,
+    request_mode: string,
+    requested: dict<any>,
+    response: any)
+  if !bufexists(bufnr)
+    return
+  endif
+  var state = State(bufnr)
+  if !state.enabled || state.generation != generation
+      || state.changedtick != changedtick
+      || getbufvar(bufnr, 'changedtick') != changedtick
+      || state.mode !=# request_mode
+
+    add(state.debug, 'discarded stale ' .. request_mode .. ' response')
+    return
+  endif
+  if type(response) != v:t_dict || !get(response, 'ok', false)
+    state.status = 'error: ' .. get(response, 'error', 'malformed LSP response')
+    return
+  endif
+  var fresh: list<dict<any>>
+  if request_mode ==# 'prefer-auto'
+    fresh = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(response, 'result', []))
+  else
+    fresh = hints.Normalize(bufnr, requested, get(response, 'result', []),
+      get(g:, 'autoveil_type_name_limit', 80))
+  endif
+  for id in keys(copy(state.views))
+    if ViewInside(state.views[id], requested)
+      remove(state.views, id)
+    endif
+  endfor
+  for view in fresh
+    state.views[view.id] = view
+  endfor
+  state.status = printf('enabled; clangd response accepted (%d substitutions)', len(fresh))
+  render.Render(bufnr, state, values(state.views))
 enddef
 
 export def Reveal()
@@ -160,7 +255,6 @@ export def OnWindowEnter()
     return
   endif
   render.CaptureWindow(win_getid(), state)
-  render.ConfigureWindow(win_getid(), state)
   render.Render(bufnr('%'), state, values(state.views))
 enddef
 
@@ -252,8 +346,9 @@ enddef
 
 export def Status(): string
   var state = State()
-  return printf('AutoVeil: %s; mode=%s; generation=%d; changedtick=%d; substitutions=%d; windows=%d',
-    state.status, state.mode, state.generation, state.changedtick, len(state.views), len(state.windows))
+  return printf('AutoVeil: %s; mode=%s; generation=%d; changedtick=%d; substitutions=%d; windows=%d; stale=%d',
+    state.status, state.mode, state.generation, state.changedtick, len(state.views), len(state.windows),
+    state.debug->filter((_, entry) => entry =~# '^discarded stale')->len())
 enddef
 
 export def SetViewsForTest(views: list<dict<any>>)
@@ -264,4 +359,3 @@ export def SetViewsForTest(views: list<dict<any>>)
   endfor
   render.Render(bufnr('%'), state, views)
 enddef
-
