@@ -1,9 +1,23 @@
 # Technical debt and intentional limitations
 
+## 2026-08-28 19:41 CEST - Buffer-wide cursor reveal
+
+Impact: holding the cursor inside a rendered source type reveals the original
+spelling in every split displaying that buffer until the active cursor leaves
+the range or window.
+
+Reason: the reveal must remove buffer-scoped virtual text as well as
+window-scoped conceal matches. Cursor pinning prevents unstable re-concealment
+and screen cursor displacement.
+
+Risk: another split can show source for longer than the former debounce
+interval. Source integrity is unaffected. Window-local virtual-text visibility
+in a future Vim release would permit independent per-window cursor reveals.
+
 ## 2026-08-28 18:06 CEST - Buffer-wide reveal
 
 Impact: revealing source in one split also removes AutoVeil's virtual text from
-other splits showing the same buffer for the short reveal interval.
+other splits showing the same buffer for the duration of that reveal.
 
 Reason: Vim virtual text properties are buffer-scoped, with no public
 window-local visibility switch. Conceal matches alone cannot display a
@@ -37,4 +51,3 @@ Impact: types beyond `g:autoveil_type_name_limit` remain as source `auto`.
 
 Reason: arbitrary truncation could hide semantically important suffixes. Safe
 structured truncation is future work.
-

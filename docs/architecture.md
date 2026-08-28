@@ -1,5 +1,14 @@
 # Architecture
 
+## 2026-08-28 19:41 CEST - Reveal ownership
+
+Reveal state records its source: cursor, insert mode, or the timed reveal
+command. A cursor-owned reveal has no expiry timer. `CursorMoved` restores the
+render only after the cursor leaves every cached TypeView source range, and
+`WinLeave` prevents that reveal from remaining pinned in an inactive window.
+This separation keeps asynchronous timers from changing concealment or screen
+cursor placement while the cursor still occupies a source type.
+
 ## 2026-08-28 18:06 CEST - Initial implementation
 
 AutoVeil is a Vim9script plugin with one external integration boundary:
@@ -40,4 +49,3 @@ independently.
 Validation is fail-closed. clangd/clang-tidy supplies semantic authority; the
 light lexer only rejects unsafe declaration shapes, masks comments/strings,
 and classifies brace scope. It never invents a type.
-

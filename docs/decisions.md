@@ -1,5 +1,20 @@
 # Architecture decisions
 
+## 2026-08-28 19:41 CEST - Pin cursor reveal to the source range
+
+Reason:
+
+- restoring conceal while the cursor remains in the source type makes the
+  screen cursor jump against the shorter replacement;
+- range entry and exit events provide a deterministic lifetime;
+- explicit command reveal can retain its independent timer.
+
+Rejected:
+
+- repeatedly restart a short timer: still permits re-concealment beneath an
+  idle cursor;
+- disable cursor reveal: removes intended editing ergonomics.
+
 ## 2026-08-28 18:06 CEST - Use public vim-lsp request functions
 
 Reason:
@@ -41,4 +56,3 @@ Rejected:
 - leave virtual text during reveal: displays duplicate, misleading types;
 - popup overlays: violate the planned conceal/text-property design and harm
   positioning/editing behavior.
-

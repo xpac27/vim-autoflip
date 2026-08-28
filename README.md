@@ -88,8 +88,9 @@ AutoVeil is opt-in. Open a supported C++ file and run:
 ```
 
 `:AutoVeilToggle` switches the current buffer on or off. Insert mode reveals
-the original spelling by default. Moving onto a concealed type briefly reveals
-it. No mappings are installed; an optional user mapping is:
+the original spelling by default. Moving onto a concealed type keeps its
+original spelling visible until the cursor leaves that source range. No
+mappings are installed; an optional user mapping is:
 
 ```vim
 nnoremap <leader>av <Cmd>AutoVeilToggle<CR>

@@ -114,9 +114,10 @@ text before the source range and a per-window high-priority Conceal match over
 the source. Window-local conceallevel and concealcursor are restored exactly.
 
 InsertEnter reveals source. InsertLeave schedules a fresh request. CursorMoved
-reveals only when the cursor reaches a rendered source range. Reveal is
-buffer-wide because Vim virtual text properties are buffer-owned; conceal
-matches and saved options are still window-owned.
+reveals when the cursor reaches a rendered source range and keeps it revealed
+until the cursor or active window leaves that range. |:AutoVeilReveal| remains
+timed. Reveal is buffer-wide because Vim virtual text properties are
+buffer-owned; conceal matches and saved options are still window-owned.
 
 ===============================================================================
 TROUBLESHOOTING                                         *autoveil-troubleshooting*

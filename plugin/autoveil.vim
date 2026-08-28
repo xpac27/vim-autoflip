@@ -35,6 +35,7 @@ augroup autoveil
   autocmd InsertEnter * core.OnInsertEnter()
   autocmd InsertLeave * core.OnInsertLeave()
   autocmd CursorMoved * core.OnCursorMoved()
+  autocmd WinLeave * core.OnWindowLeave()
   autocmd BufWipeout * core.OnBufferWipeout(str2nr(expand('<abuf>')))
   autocmd WinClosed * core.OnWindowClosed(str2nr(expand('<amatch>')))
   autocmd User lsp_buffer_enabled,lsp_diagnostics_updated core.OnLspEvent()

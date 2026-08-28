@@ -68,6 +68,40 @@ g:autoveil_debounce_ms = old_debounce
 core.Disable()
 bwipe!
 
+# A source type stays revealed for as long as the cursor remains inside it.
+new
+setlocal filetype=cpp conceallevel=0 concealcursor=
+setline(1, ['void cursor_reveal() {', '  std::vector<int>::iterator it = values.begin();', '}'])
+core.Enable()
+var cursor_view = types.NewView('prefer-auto', 2, 3, 26, 'auto')
+core.SetViewsForTest([cursor_view])
+var cursor_debounce = g:autoveil_debounce_ms
+g:autoveil_debounce_ms = 10
+cursor(2, 4)
+core.OnCursorMoved()
+assert_true(core.State().revealed)
+assert_equal(-1, core.State().reveal_timer)
+assert_equal([], prop_list(2))
+sleep 60m
+assert_true(core.State().revealed)
+assert_equal([], prop_list(2))
+cursor(2, 12)
+core.OnCursorMoved()
+sleep 60m
+assert_equal([], prop_list(2))
+cursor(2, 30)
+core.OnCursorMoved()
+assert_false(core.State().revealed)
+assert_equal(1, len(prop_list(2)))
+cursor(2, 4)
+core.OnCursorMoved()
+core.OnWindowLeave()
+assert_false(core.State().revealed)
+assert_equal(1, len(prop_list(2)))
+g:autoveil_debounce_ms = cursor_debounce
+core.Disable()
+bwipe!
+
 # Pre-existing split windows retain independent option baselines.
 new
 setlocal filetype=cpp conceallevel=1 concealcursor=nc

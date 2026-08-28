@@ -1,5 +1,12 @@
 # Glossary
 
+## 2026-08-28 19:41 CEST - Reveal ownership
+
+- **cursor-pinned reveal**: a reveal that persists while the active cursor is
+  inside a TypeView's complete source range and ends on range or window exit.
+- **timed reveal**: the temporary reveal started by `:AutoVeilReveal` and ended
+  by its configured debounce timer.
+
 ## 2026-08-28 18:06 CEST - Canonical terms
 
 - **AutoVeil**: this plugin and command prefix.
@@ -16,4 +23,3 @@
   matches, exposing original source.
 - **authority**: clang-tidy code action or clangd type inlay hint; lexical code
   is only a safety filter.
-

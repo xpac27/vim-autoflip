@@ -125,6 +125,15 @@ contract and avoids showing a misleading duplicate type.
 
 ### Editing ergonomics
 
+#### Implemented cursor-stability adjustment (2026-08-28 19:41 CEST)
+
+The short timer must not restore concealment while the cursor remains inside a
+rendered source range: Vim then redraws against the shorter replacement and
+the visible cursor position jumps. Cursor-triggered reveal therefore remains
+pinned until `CursorMoved` leaves the complete source range or `WinLeave`
+deactivates the window. The explicit `:AutoVeilReveal` command remains timed by
+`g:autoveil_debounce_ms`.
+
 - On `InsertEnter`, temporarily reveal all original types in that window.
 - On `InsertLeave`, refresh and conceal again after a short debounce.
 - On `CursorMoved`, reveal the declaration currently under the cursor for a

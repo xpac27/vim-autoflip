@@ -20,6 +20,7 @@ def NewState(bufnr: number): dict<any>
     views: {},
     windows: {},
     revealed: false,
+    reveal_source: '',
     reveal_timer: -1,
     status: 'disabled',
     debug: [],
@@ -78,6 +79,7 @@ export def Enable()
   endif
   state.enabled = true
   state.revealed = false
+  state.reveal_source = ''
   state.generation += 1
   state.changedtick = b:changedtick
   state.status = 'enabled; waiting for refresh'
@@ -95,6 +97,7 @@ export def Disable()
   render.Cleanup(bufnr, state)
   state.enabled = false
   state.revealed = false
+  state.reveal_source = ''
   state.views = {}
   state.status = 'disabled'
 enddef
@@ -118,6 +121,8 @@ export def SetMode(mode: string)
   endif
   state.mode = mode
   state.views = {}
+  state.revealed = false
+  state.reveal_source = ''
   state.generation += 1
   if state.enabled
     Refresh(true)
@@ -131,7 +136,10 @@ export def Refresh(force: bool = false)
     return
   endif
   StopTimer(state, 'pending_timer')
-  state.revealed = false
+  if state.reveal_source !=# 'cursor'
+    state.revealed = false
+    state.reveal_source = ''
+  endif
   if mode() =~# '^i' || pumvisible()
     state.status = 'paused: insert or completion menu active'
     return
@@ -233,14 +241,17 @@ def HandleReply(
 enddef
 
 export def Reveal()
+  var reveal_bufnr = bufnr('%')
   var state = State()
   if !state.enabled
     return
   endif
   StopTimer(state, 'reveal_timer')
-  render.Reveal(bufnr('%'), state)
+  state.reveal_source = 'timer'
+  render.Reveal(reveal_bufnr, state)
   var delay = max([get(g:, 'autoveil_debounce_ms', 300), 50])
-  state.reveal_timer = timer_start(delay, (_) => EndReveal(bufnr('%'), state.generation))
+  var generation = state.generation
+  state.reveal_timer = timer_start(delay, (_) => EndReveal(reveal_bufnr, generation))
 enddef
 
 def EndReveal(bufnr: number, generation: number)
@@ -249,10 +260,11 @@ def EndReveal(bufnr: number, generation: number)
   endif
   var state = State(bufnr)
   state.reveal_timer = -1
-  if !state.enabled || state.generation != generation
+  if !state.enabled || state.generation != generation || state.reveal_source !=# 'timer'
     return
   endif
   state.revealed = false
+  state.reveal_source = ''
   render.Render(bufnr, state, values(state.views))
 enddef
 
@@ -302,6 +314,7 @@ export def OnInsertEnter()
   var state = get(b:, 'autoveil_state', {})
   if !empty(state) && state.enabled && get(g:, 'autoveil_reveal_on_insert', true)
     StopTimer(state, 'reveal_timer')
+    state.reveal_source = 'insert'
     render.Reveal(bufnr('%'), state)
   endif
 enddef
@@ -310,8 +323,18 @@ export def OnInsertLeave()
   var state = get(b:, 'autoveil_state', {})
   if !empty(state) && state.enabled
     state.revealed = false
+    state.reveal_source = ''
     OnBufferChanged()
   endif
+enddef
+
+def CursorInsideView(state: dict<any>): bool
+  for view in values(state.views)
+    if line('.') == view.lnum && col('.') >= view.col && col('.') < view.col + view.length
+      return true
+    endif
+  endfor
+  return false
 enddef
 
 export def OnCursorMoved()
@@ -319,12 +342,28 @@ export def OnCursorMoved()
   if empty(state) || !state.enabled || !get(g:, 'autoveil_reveal_under_cursor', true)
     return
   endif
-  for view in values(state.views)
-    if line('.') == view.lnum && col('.') >= view.col && col('.') < view.col + view.length
-      Reveal()
-      return
+  if CursorInsideView(state)
+    StopTimer(state, 'reveal_timer')
+    state.reveal_source = 'cursor'
+    if !state.revealed
+      render.Reveal(bufnr('%'), state)
     endif
-  endfor
+    return
+  endif
+  if state.revealed && state.reveal_source ==# 'cursor'
+    state.revealed = false
+    state.reveal_source = ''
+    render.Render(bufnr('%'), state, values(state.views))
+  endif
+enddef
+
+export def OnWindowLeave()
+  var state = get(b:, 'autoveil_state', {})
+  if !empty(state) && state.enabled && state.revealed && state.reveal_source ==# 'cursor'
+    state.revealed = false
+    state.reveal_source = ''
+    render.Render(bufnr('%'), state, values(state.views))
+  endif
 enddef
 
 export def OnLspEvent()

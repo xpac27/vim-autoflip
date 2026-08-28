@@ -1,5 +1,18 @@
 # Engineering journal
 
+## 2026-08-28 19:41 CEST - Fix cursor reveal expiry
+
+- Reproduced the report with a deterministic headless test: entering an
+  explicit source type cleared its display properties, but the shared reveal
+  timer restored them after the debounce interval while the cursor remained
+  inside the type.
+- Split cursor, insert, and command reveal ownership. Cursor reveal now stays
+  pinned without a timer and is released on source-range or window exit.
+- Captured the originating buffer and generation for timed callbacks instead
+  of resolving the current buffer when a timer fires.
+- Added regression coverage for waiting across multiple debounce intervals,
+  moving within a type, and leaving its range.
+
 ## 2026-08-28 18:06 CEST - End-to-end implementation
 
 - Read the complete product plan and repository rules before implementation.
