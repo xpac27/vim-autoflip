@@ -1,0 +1,144 @@
+*autoveil.txt*      Display-only clangd-backed C++ type views
+
+===============================================================================
+CONTENTS                                                     *autoveil-contents*
+
+  1. Introduction...............................|autoveil-introduction|
+  2. Requirements................................|autoveil-requirements|
+  3. Commands........................................|autoveil-commands|
+  4. Configuration..............................|autoveil-configuration|
+  5. Operation......................................|autoveil-operation|
+  6. Troubleshooting........................|autoveil-troubleshooting|
+  7. Limitations..................................|autoveil-limitations|
+
+===============================================================================
+INTRODUCTION                                             *autoveil-introduction*
+
+AutoVeil displays two visual-only C++ type transformations:
+
+  prefer-auto
+      Conceal an explicit local-variable type and display the replacement from
+      a clang-tidy modernize-use-auto code action.
+
+  show-deduced-types
+      Conceal a simple auto declaration prefix and display the full inferred
+      type from a clangd type inlay hint.
+
+AutoVeil never applies a code action or changes buffer text. Editing, undo,
+writes, yanks, searches, macros, and Git operate on the original source.
+
+===============================================================================
+REQUIREMENTS                                               *autoveil-requirements*
+
+Vim 9.x must have +vim9script, +textprop, +conceal, +channel, and +job.
+vim-lsp is required and must attach a running clangd server. clangd needs an
+accurate compilation database. For prefer-auto, enable --clang-tidy and:
+>
+  Diagnostics:
+    ClangTidy:
+      Add: [modernize-use-auto]
+<
+For show-deduced-types, enable clangd deduced type hints:
+>
+  InlayHints:
+    DeducedTypes: Yes
+<
+AutoVeil requests raw hints and does not require vim-lsp's hint renderer.
+
+===============================================================================
+COMMANDS                                                       *autoveil-commands*
+
+                                                    *:AutoVeilEnable*
+:AutoVeilEnable       Enable AutoVeil for the current supported buffer.
+
+                                                    *:AutoVeilDisable*
+:AutoVeilDisable      Clear rendering, stop timers, and restore every tracked
+                      window's exact conceal options.
+
+                                                    *:AutoVeilToggle*
+:AutoVeilToggle       Toggle the current buffer.
+
+                                                    *:AutoVeilMode*
+:AutoVeilMode {mode}  Select prefer-auto or show-deduced-types and refresh.
+
+                                                    *:AutoVeilRefresh*
+:AutoVeilRefresh      Force a new visible-range request.
+
+                                                    *:AutoVeilReveal*
+:AutoVeilReveal       Temporarily reveal original source spellings.
+
+                                                    *:AutoVeilStatus*
+:AutoVeilStatus       Show readiness, mode, generations, cache size, tracked
+                      windows, and discarded stale response count.
+
+===============================================================================
+CONFIGURATION                                             *autoveil-configuration*
+
+                                          *g:autoveil_enabled_by_default*
+g:autoveil_enabled_by_default  Boolean. Default: false.
+
+                                                     *g:autoveil_mode*
+g:autoveil_mode                String. Default: "prefer-auto".
+
+                                              *g:autoveil_debounce_ms*
+g:autoveil_debounce_ms         Number. Default: 300.
+
+                                         *g:autoveil_reveal_on_insert*
+g:autoveil_reveal_on_insert    Boolean. Default: true.
+
+                                    *g:autoveil_reveal_under_cursor*
+g:autoveil_reveal_under_cursor Boolean. Default: true.
+
+                                        *g:autoveil_max_visible_lines*
+g:autoveil_max_visible_lines   Number. Default: 300.
+
+                                           *g:autoveil_type_name_limit*
+g:autoveil_type_name_limit     Number. Default: 80. Longer types are skipped.
+
+No mappings are installed.
+
+The public API consists of these commands, configuration variables, and the
+AutoVeilAuto and AutoVeilDeducedType highlight groups. b:autoveil_state and
+autoload functions are internal. Version 1 emits no User autocommands.
+
+===============================================================================
+OPERATION                                                     *autoveil-operation*
+
+AutoVeil requests the visible lines plus a five-line margin. Edits increment a
+buffer generation and start a debounce timer. A reply is accepted only when
+the buffer still exists, remains enabled in the same mode, and both generation
+and changedtick still match.
+
+Accepted candidates become a shared TypeView, then a renderer places virtual
+text before the source range and a per-window high-priority Conceal match over
+the source. Window-local conceallevel and concealcursor are restored exactly.
+
+InsertEnter reveals source. InsertLeave schedules a fresh request. CursorMoved
+reveals only when the cursor reaches a rendered source range. Reveal is
+buffer-wide because Vim virtual text properties are buffer-owned; conceal
+matches and saved options are still window-owned.
+
+===============================================================================
+TROUBLESHOOTING                                         *autoveil-troubleshooting*
+
+Use |:AutoVeilStatus| first. A waiting status names the missing dependency,
+clangd attachment, or capability. Zero substitutions usually means clangd did
+not produce an authoritative candidate or the conservative validator rejected
+an ambiguous shape.
+
+Ensure compile_commands.json is accurate. AutoVeil never manufactures flags.
+Set g:lsp_log_file and g:lsp_log_verbose to inspect vim-lsp traffic. Keep
+g:lsp_inlay_hints_enabled at 0 if duplicated hints appear.
+
+===============================================================================
+LIMITATIONS                                                 *autoveil-limitations*
+
+Only direct one-edit modernize-use-auto WorkspaceEdits and simple initialized
+local auto declarations are supported. Command actions, multi-file edits,
+fields, aliases, function returns, parameters, structured bindings, macros,
+direct-list initialization, incomplete declarations, and ambiguous spellings
+are skipped. Overlong inferred labels are skipped rather than truncated.
+
+AutoVeil targets Vim only, not Neovim, Coc, or other LSP clients.
+
+vim:tw=78:ts=8:noet:ft=help:norl:

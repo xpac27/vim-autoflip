@@ -1,0 +1,173 @@
+# AutoVeil
+
+AutoVeil is a display-only C++ type viewer for current Vim 9.x. It has two
+modes:
+
+- `prefer-auto` displays a safe clang-tidy `modernize-use-auto` replacement
+  over an explicit local-variable type.
+- `show-deduced-types` displays clangd's inferred type over the source `auto`
+  spelling.
+
+AutoVeil never applies an edit. The buffer, undo history, saved file, search,
+yanks, macros, navigation, and Git diff continue to use the original source.
+Only Vim conceal matches and virtual text change what a window displays.
+
+## Requirements
+
+- current Vim 9.x with `+vim9script`, `+textprop`, `+conceal`, `+channel`, and
+  `+job`;
+- [vim-lsp](https://github.com/prabirshrestha/vim-lsp), loaded as a required
+  dependency;
+- clangd attached to the C++ buffer through vim-lsp;
+- an accurate `compile_commands.json` (or equivalent clangd configuration);
+- clang-tidy's `modernize-use-auto` enabled for `prefer-auto`;
+- clangd deduced-type inlay hints enabled for `show-deduced-types`.
+
+Neovim, legacy Vim, Coc, direct clangd process management, and heuristic type
+deduction are intentionally unsupported.
+
+## Installation
+
+With vim-plug, load vim-lsp before AutoVeil:
+
+```vim
+Plug 'prabirshrestha/vim-lsp'
+Plug '/absolute/path/to/vim-autoauto'
+```
+
+Or copy/clone this repository below a Vim package `start` directory. Run
+`:helptags ALL` after installation.
+
+A minimal vim-lsp clangd registration is:
+
+```vim
+if executable('clangd')
+  au User lsp_setup call lsp#register_server({
+        \ 'name': 'clangd',
+        \ 'cmd': {server_info -> ['clangd', '--background-index', '--clang-tidy']},
+        \ 'allowlist': ['c', 'cpp', 'objc', 'objcpp'],
+        \ })
+endif
+```
+
+`vim-lsp-settings` may register clangd instead. Keep `clangd` in the registered
+server name so AutoVeil can conservatively identify it. AutoVeil makes its own
+raw inlay-hint request; vim-lsp's renderer can remain disabled (its default):
+
+```vim
+let g:lsp_inlay_hints_enabled = 0
+```
+
+In the project root, enable the clang-tidy check and deduced-type hints:
+
+```yaml
+# .clangd
+Diagnostics:
+  ClangTidy:
+    Add: [modernize-use-auto]
+InlayHints:
+  DeducedTypes: Yes
+```
+
+Some clangd installations enable clang-tidy without the launch flag; using
+`--clang-tidy` explicitly is the clearest known-good setup. AutoVeil does not
+invent compiler flags. Fix compilation database problems in the project.
+
+## Usage
+
+AutoVeil is opt-in. Open a supported C++ file and run:
+
+```vim
+:AutoVeilEnable
+:AutoVeilMode prefer-auto
+:AutoVeilMode show-deduced-types
+:AutoVeilRefresh
+:AutoVeilReveal
+:AutoVeilStatus
+:AutoVeilDisable
+```
+
+`:AutoVeilToggle` switches the current buffer on or off. Insert mode reveals
+the original spelling by default. Moving onto a concealed type briefly reveals
+it. No mappings are installed; an optional user mapping is:
+
+```vim
+nnoremap <leader>av <Cmd>AutoVeilToggle<CR>
+```
+
+## Configuration
+
+Set globals before the plugin loads:
+
+```vim
+let g:autoveil_enabled_by_default = v:false
+let g:autoveil_mode = 'prefer-auto'
+let g:autoveil_debounce_ms = 300
+let g:autoveil_reveal_on_insert = v:true
+let g:autoveil_reveal_under_cursor = v:true
+let g:autoveil_max_visible_lines = 300
+let g:autoveil_type_name_limit = 80
+```
+
+`g:autoveil_type_name_limit` is fail-closed: a longer clangd label is skipped,
+not cut into a potentially misleading C++ type.
+
+## Troubleshooting
+
+Start with `:AutoVeilStatus`.
+
+- `vim-lsp is not installed`: install/load vim-lsp before AutoVeil.
+- `no running clangd server is attached`: check vim-lsp registration and
+  `:LspStatus`/`:CheckHealth` if available.
+- `does not advertise code actions`: update/configure clangd and vim-lsp.
+- `does not advertise inlay hints`: use a current clangd with standard
+  `inlayHintProvider` support.
+- `0 substitutions`: inspect clangd diagnostics, `.clangd`, the compilation
+  database, and the conservative limitations below. This is not an error.
+- duplicated inlay hints: disable vim-lsp's renderer with
+  `g:lsp_inlay_hints_enabled = 0`.
+
+For vim-lsp protocol logs:
+
+```vim
+let g:lsp_log_verbose = 1
+let g:lsp_log_file = '/tmp/vim-lsp.log'
+```
+
+## Intentional limitations
+
+- Only the listed C/C++ header/source extensions and simple initialized local
+  variables are targeted.
+- `prefer-auto` accepts direct, single-edit `WorkspaceEdit` code actions only.
+  Command-backed or multi-file fixes are ignored.
+- `show-deduced-types` currently accepts simple `auto name = ...`
+  declarations. Direct-list initialization, function returns, parameters,
+  fields, aliases, structured bindings, macros, and ambiguous declarations are
+  ignored.
+- Reveal removes buffer-owned virtual text, so it is buffer-wide across splits.
+  Conceal matches and option restoration remain independently tracked for each
+  window.
+- AutoVeil recognizes an attached server whose vim-lsp name or info name
+  contains `clangd`.
+
+## Public API
+
+The supported user API is the `:AutoVeil...` command family, the seven
+`g:autoveil_...` configuration variables above, and the `AutoVeilAuto` and
+`AutoVeilDeducedType` highlight groups. The `b:autoveil_state` dictionary and
+autoload module exports are implementation details and may change. Version 1
+does not emit User autocommands or install mappings.
+
+See `:help autoveil`, [features](docs/features.md), and
+[architecture](docs/architecture.md) for the complete behavior.
+
+## Development
+
+Run all deterministic checks without a personal Vim configuration:
+
+```sh
+make check
+```
+
+The optional real-clangd test is described in `test/README.md`; it skips when
+vim-lsp or clangd is unavailable.

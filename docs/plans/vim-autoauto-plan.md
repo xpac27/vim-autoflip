@@ -110,6 +110,19 @@ does not provide Neovim's overlay mode. Combine it with concealment:
 Keep all Vim option changes per-window and restore their exact previous values
 when the feature is disabled or the window is closed.
 
+### Implemented adjustment: reveal scope (2026-08-28 18:06 CEST)
+
+Vim virtual text properties are buffer-owned and have no public window-local
+visibility control, whereas conceal matches and conceal options are
+window-owned. Therefore a truthful reveal cannot remove replacement text in
+only one split: doing so would either affect all splits or leave duplicate
+source and replacement text in the revealed window.
+
+The implemented smallest safe adjustment makes reveal buffer-wide for every
+split showing that buffer. Conceal match IDs and original option values remain
+tracked and restored independently per window. This preserves the display-only
+contract and avoids showing a misleading duplicate type.
+
 ### Editing ergonomics
 
 - On `InsertEnter`, temporarily reveal all original types in that window.
