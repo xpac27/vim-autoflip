@@ -1,5 +1,12 @@
 # Glossary
 
+## 2026-08-28 20:55 CEST - Selective reveal
+
+- **selected TypeView ID**: the one cached substitution omitted from rendering
+  while the cursor occupies its source range.
+- **full reveal**: removal of every AutoVeil property and conceal match for
+  insert mode or the timed reveal command.
+
 ## 2026-08-28 20:29 CEST - Prefer-auto levels
 
 - **conservative**: the default prefer-auto level, authorized exclusively by a
@@ -11,8 +18,9 @@
 
 ## 2026-08-28 19:41 CEST - Reveal ownership
 
-- **cursor-pinned reveal**: a reveal that persists while the active cursor is
-  inside a TypeView's complete source range and ends on range or window exit.
+- **cursor-pinned reveal**: selective omission that persists while the active
+  cursor is inside one TypeView's complete source range and ends on range or
+  window exit.
 - **timed reveal**: the temporary reveal started by `:AutoVeilReveal` and ended
   by its configured debounce timer.
 

@@ -1,5 +1,17 @@
 # Engineering journal
 
+## 2026-08-28 20:55 CEST - Make cursor reveal selective
+
+- Reproduced that cursor reveal called the full `render.Reveal()` path, which
+  cleared every AutoVeil property and conceal match in the buffer.
+- Added a stable selected-TypeView ID to buffer state. Normal rendering now
+  omits only that view while rebuilding every unrelated property and match.
+- Kept insert and explicit command reveal on the existing full-reveal path.
+- Added deterministic coverage for multiple types, direct movement between
+  types, timeout stability, range/window exit, and match counts in two splits.
+- Extended the real clangd integration to prove that selecting one AST-backed
+  type leaves another real substitution rendered and never modifies source.
+
 ## 2026-08-28 20:29 CEST - Add opt-in same-type copies
 
 - Confirmed clang-tidy's `MinTypeNameLength` and `RemoveStars` options do not

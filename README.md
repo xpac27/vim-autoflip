@@ -91,8 +91,9 @@ AutoVeil is opt-in. Open a supported C++ file and run:
 
 `:AutoVeilToggle` switches the current buffer on or off. Insert mode reveals
 the original spelling by default. Moving onto a concealed type keeps its
-original spelling visible until the cursor leaves that source range. No
-mappings are installed; an optional user mapping is:
+original spelling visible until the cursor leaves that source range; every
+other substitution remains concealed. No mappings are installed; an optional
+user mapping is:
 
 ```vim
 nnoremap <leader>av <Cmd>AutoVeilToggle<CR>
@@ -178,9 +179,11 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
   declarations. Direct-list initialization, function returns, parameters,
   fields, aliases, structured bindings, macros, and ambiguous declarations are
   ignored.
-- Reveal removes buffer-owned virtual text, so it is buffer-wide across splits.
-  Conceal matches and option restoration remain independently tracked for each
-  window.
+- Cursor reveal removes only the selected TypeView, but that selection appears
+  as source in every split showing the buffer because virtual text is
+  buffer-owned. Insert and explicit command reveal intentionally expose all
+  types. Conceal matches and option restoration remain independently tracked
+  for each window.
 - AutoVeil recognizes an attached server whose vim-lsp name or info name
   contains `clangd`.
 

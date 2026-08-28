@@ -76,8 +76,13 @@ export def Render(bufnr: number, state: dict<any>, views: list<dict<any>>)
   if state.revealed || empty(views) || !bufexists(bufnr)
     return
   endif
+  var hidden_id = get(state, 'revealed_view_id', '')
+  var rendered = views->copy()->filter((_, view) => view.id !=# hidden_id)
+  if empty(rendered)
+    return
+  endif
   EnsureTypes(bufnr)
-  for view in views
+  for view in rendered
     var propname = view.kind ==# 'prefer-auto' ? AUTO_PROP : DEDUCED_PROP
     prop_add(view.lnum, view.col, {
       bufnr: bufnr,
@@ -91,7 +96,7 @@ export def Render(bufnr: number, state: dict<any>, views: list<dict<any>>)
       continue
     endif
     ConfigureWindow(winid, state)
-    for view in views
+    for view in rendered
       var id = matchaddpos('Conceal', [[view.lnum, view.col, view.length]], 100, -1,
         {conceal: '', window: winid})
       if id > 0
@@ -103,6 +108,7 @@ enddef
 
 export def Reveal(bufnr: number, state: dict<any>)
   state.revealed = true
+  state.revealed_view_id = ''
   ClearBufferProperties(bufnr)
   ClearMatches(state)
 enddef

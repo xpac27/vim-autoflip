@@ -87,12 +87,21 @@ if s:copy_views[0].length != strlen('IntegrationState')
   call writefile(['FAIL: AST copy view did not cover the explicit type'], '/dev/stderr')
   cquit
 endif
+let s:selected_copy = filter(copy(s:copy_views), {_, view -> view.lnum == s:copy_line})[0]
+call cursor(s:copy_line, s:selected_copy.col)
+doautocmd CursorMoved
+call assert_equal([], filter(prop_list(s:copy_line), {_, prop -> prop.type =~# '^autoveil_'}))
+call assert_equal(1, len(filter(prop_list(s:copy_again_line), {_, prop -> prop.type =~# '^autoveil_'})))
+call cursor(s:copy_line, s:selected_copy.col + s:selected_copy.length)
+doautocmd CursorMoved
+call assert_equal(1, len(filter(prop_list(s:copy_line), {_, prop -> prop.type =~# '^autoveil_'})))
+call assert_equal(1, len(filter(prop_list(s:copy_again_line), {_, prop -> prop.type =~# '^autoveil_'})))
 call assert_equal(s:before, getline(1, '$'))
 call assert_false(&modified)
 if !empty(v:errors)
   call writefile(v:errors, '/dev/stderr')
   cquit
 endif
-call writefile(['PASS: real clangd hint, clang-tidy action, and AST copy rendered display-only'], '/dev/stdout')
+call writefile(['PASS: real clangd views and selective cursor reveal rendered display-only'], '/dev/stdout')
 AutoVeilDisable
 qall!

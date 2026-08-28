@@ -23,6 +23,7 @@ def NewState(bufnr: number): dict<any>
     views: {},
     windows: {},
     revealed: false,
+    revealed_view_id: '',
     reveal_source: '',
     reveal_timer: -1,
     status: 'disabled',
@@ -82,6 +83,7 @@ export def Enable()
   endif
   state.enabled = true
   state.revealed = false
+  state.revealed_view_id = ''
   state.reveal_source = ''
   state.generation += 1
   state.changedtick = b:changedtick
@@ -100,6 +102,7 @@ export def Disable()
   render.Cleanup(bufnr, state)
   state.enabled = false
   state.revealed = false
+  state.revealed_view_id = ''
   state.reveal_source = ''
   state.views = {}
   state.status = 'disabled'
@@ -125,6 +128,7 @@ export def SetMode(mode: string)
   state.mode = mode
   state.views = {}
   state.revealed = false
+  state.revealed_view_id = ''
   state.reveal_source = ''
   state.generation += 1
   if state.enabled
@@ -148,6 +152,7 @@ export def SetPreferAutoLevel(level: string)
   endif
   state.views = {}
   state.revealed = false
+  state.revealed_view_id = ''
   state.reveal_source = ''
   state.generation += 1
   render.Render(bufnr('%'), state, [])
@@ -170,6 +175,7 @@ export def Refresh(force: bool = false)
   StopTimer(state, 'pending_timer')
   if state.reveal_source !=# 'cursor'
     state.revealed = false
+    state.revealed_view_id = ''
     state.reveal_source = ''
   endif
   if mode() =~# '^i' || pumvisible()
@@ -343,6 +349,7 @@ def EndReveal(bufnr: number, generation: number)
     return
   endif
   state.revealed = false
+  state.revealed_view_id = ''
   state.reveal_source = ''
   render.Render(bufnr, state, values(state.views))
 enddef
@@ -367,6 +374,11 @@ export def OnBufferChanged()
   state.generation += 1
   state.changedtick = b:changedtick
   state.views = {}
+  if state.reveal_source ==# 'cursor'
+    state.revealed = false
+    state.revealed_view_id = ''
+    state.reveal_source = ''
+  endif
   render.ClearBufferProperties(bufnr('%'))
   render.ClearMatches(state)
   StopTimer(state, 'pending_timer')
@@ -394,6 +406,7 @@ export def OnInsertEnter()
   if !empty(state) && state.enabled && get(g:, 'autoveil_reveal_on_insert', true)
     StopTimer(state, 'reveal_timer')
     state.reveal_source = 'insert'
+    state.revealed_view_id = ''
     render.Reveal(bufnr('%'), state)
   endif
 enddef
@@ -402,18 +415,19 @@ export def OnInsertLeave()
   var state = get(b:, 'autoveil_state', {})
   if !empty(state) && state.enabled
     state.revealed = false
+    state.revealed_view_id = ''
     state.reveal_source = ''
     OnBufferChanged()
   endif
 enddef
 
-def CursorInsideView(state: dict<any>): bool
+def ViewUnderCursor(state: dict<any>): dict<any>
   for view in values(state.views)
     if line('.') == view.lnum && col('.') >= view.col && col('.') < view.col + view.length
-      return true
+      return view
     endif
   endfor
-  return false
+  return {}
 enddef
 
 export def OnCursorMoved()
@@ -421,16 +435,20 @@ export def OnCursorMoved()
   if empty(state) || !state.enabled || !get(g:, 'autoveil_reveal_under_cursor', true)
     return
   endif
-  if CursorInsideView(state)
+  var view = ViewUnderCursor(state)
+  if !empty(view)
     StopTimer(state, 'reveal_timer')
     state.reveal_source = 'cursor'
-    if !state.revealed
-      render.Reveal(bufnr('%'), state)
+    if state.revealed || state.revealed_view_id !=# view.id
+      state.revealed = false
+      state.revealed_view_id = view.id
+      render.Render(bufnr('%'), state, values(state.views))
     endif
     return
   endif
-  if state.revealed && state.reveal_source ==# 'cursor'
+  if state.reveal_source ==# 'cursor'
     state.revealed = false
+    state.revealed_view_id = ''
     state.reveal_source = ''
     render.Render(bufnr('%'), state, values(state.views))
   endif
@@ -438,8 +456,9 @@ enddef
 
 export def OnWindowLeave()
   var state = get(b:, 'autoveil_state', {})
-  if !empty(state) && state.enabled && state.revealed && state.reveal_source ==# 'cursor'
+  if !empty(state) && state.enabled && state.reveal_source ==# 'cursor'
     state.revealed = false
+    state.revealed_view_id = ''
     state.reveal_source = ''
     render.Render(bufnr('%'), state, values(state.views))
   endif

@@ -1,5 +1,16 @@
 # Tests
 
+## 2026-08-28 20:55 CEST - Selective reveal coverage
+
+Lifecycle tests render multiple TypeViews and verify that cursor entry removes
+only the selected property/match, movement within it stays stable, direct
+movement to another view swaps the omission, and range/window exit restores
+both. The split test asserts every tracked window retains matches for unrelated
+views.
+
+The optional real integration selects one clangd AST-backed copy and verifies
+that another real copy view remains rendered while source stays unchanged.
+
 ## 2026-08-28 20:29 CEST - AST copy coverage
 
 The deterministic suite mocks `astProvider` and `textDocument/ast` to cover

@@ -1,5 +1,22 @@
 # Architecture decisions
 
+## 2026-08-28 20:55 CEST - Omit one TypeView for cursor reveal
+
+Reason:
+
+- stable TypeView IDs make the selected substitution unambiguous;
+- rebuilding all properties and matches except that ID preserves truthful
+  source display without disturbing unrelated substitutions;
+- the existing renderer already owns authoritative cleanup and split tracking.
+
+Rejected:
+
+- call full reveal from `CursorMoved`: unnecessarily exposes the document;
+- delete only the active window's conceal match: leaves buffer-owned virtual
+  replacement text beside the revealed source;
+- mutate one property in place without rebuilding matches: risks stale split
+  match IDs and complicates cleanup.
+
 ## 2026-08-28 20:29 CEST - Add clangd AST as an opt-in authority
 
 Reason:

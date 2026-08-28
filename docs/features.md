@@ -1,5 +1,15 @@
 # Features
 
+## 2026-08-28 20:55 CEST - Selective cursor reveal
+
+- Cursor reveal now omits only the TypeView containing the cursor instead of
+  clearing every rendered type in the buffer.
+- Moving directly between source ranges re-conceals the previous type and
+  reveals the new one atomically.
+- Insert mode and `:AutoVeilReveal` retain intentional full-buffer reveal.
+- Split windows keep every unrelated type concealed; only the selected type is
+  exposed across splits because its virtual text is buffer-owned.
+
 ## 2026-08-28 20:29 CEST - Configurable prefer-auto authority
 
 - `prefer-auto` now has a conservative default and an opt-in

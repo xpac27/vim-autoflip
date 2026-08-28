@@ -125,6 +125,15 @@ contract and avoids showing a misleading duplicate type.
 
 ### Editing ergonomics
 
+#### Implemented selective cursor adjustment (2026-08-28 20:55 CEST)
+
+Cursor reveal now records the stable ID of the TypeView containing the cursor
+and rebuilds rendering with only that view omitted. Other types retain both
+their virtual replacement and conceal match. Insert mode and
+`:AutoVeilReveal` intentionally retain full reveal. Because the selected
+virtual-text property is buffer-owned, its source spelling appears in every
+split showing the buffer, but unrelated types remain concealed in every split.
+
 #### Implemented cursor-stability adjustment (2026-08-28 19:41 CEST)
 
 The short timer must not restore concealment while the cursor remains inside a

@@ -1,5 +1,19 @@
 # Architecture
 
+## 2026-08-28 20:55 CEST - Selective TypeView omission
+
+Reveal state distinguishes a full reveal from a cursor-selected TypeView ID.
+The renderer always rebuilds its buffer properties and per-window matches from
+the cached TypeViews. During cursor reveal it omits only the matching stable ID;
+all other views receive their normal virtual text and conceal matches. Moving
+to another view changes the omitted ID, while range or window exit clears it.
+
+Insert mode and the timed reveal command still use full reveal, which clears
+all AutoVeil properties and matches. This keeps their editing semantics
+unchanged. Since virtual text remains buffer-owned, omission of the selected ID
+is visible in every split of the buffer, but it no longer affects unrelated
+types.
+
 ## 2026-08-28 20:29 CEST - Optional AST copy authority
 
 The `conservative` prefer-auto level retains the original code-action path.
@@ -25,11 +39,11 @@ in-flight combined reply just like an edit or mode change.
 ## 2026-08-28 19:41 CEST - Reveal ownership
 
 Reveal state records its source: cursor, insert mode, or the timed reveal
-command. A cursor-owned reveal has no expiry timer. `CursorMoved` restores the
-render only after the cursor leaves every cached TypeView source range, and
-`WinLeave` prevents that reveal from remaining pinned in an inactive window.
-This separation keeps asynchronous timers from changing concealment or screen
-cursor placement while the cursor still occupies a source type.
+command. A cursor-owned reveal has no expiry timer and records the selected
+TypeView ID. `CursorMoved` restores that view only after the cursor leaves its
+source range, and `WinLeave` prevents it from remaining exposed in an inactive
+window. This separation keeps asynchronous timers from changing concealment or
+screen cursor placement while the cursor still occupies a source type.
 
 ## 2026-08-28 18:06 CEST - Initial implementation
 
@@ -64,9 +78,9 @@ window dictionary. Each window entry owns the pre-AutoVeil conceal option
 values and its conceal match IDs.
 
 Vim text properties are buffer-owned, while matches/options are window-owned.
-A reveal therefore clears replacement properties and conceal matches for the
-whole buffer. Normal rendering and restoration still track every split
-independently.
+Full reveal clears every replacement property and conceal match. Cursor reveal
+selectively omits one property and its corresponding match in every split.
+Normal rendering and restoration still track every split independently.
 
 Validation is fail-closed. clangd/clang-tidy supplies semantic authority; the
 light lexer only rejects unsafe declaration shapes, masks comments/strings,

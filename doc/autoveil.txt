@@ -133,9 +133,11 @@ the source. Window-local conceallevel and concealcursor are restored exactly.
 
 InsertEnter reveals source. InsertLeave schedules a fresh request. CursorMoved
 reveals when the cursor reaches a rendered source range and keeps it revealed
-until the cursor or active window leaves that range. |:AutoVeilReveal| remains
-timed. Reveal is buffer-wide because Vim virtual text properties are
-buffer-owned; conceal matches and saved options are still window-owned.
+until the cursor or active window leaves that range. Every other TypeView stays
+rendered. |:AutoVeilReveal| remains timed and reveals all types, as does insert
+mode. A cursor-selected type is revealed in every split showing the buffer
+because Vim virtual text properties are buffer-owned; unrelated types remain
+concealed, and conceal matches and saved options are still window-owned.
 
 At the same-type-copies level, a light lexical scan only discovers possible
 one-line copy declarations. It has no semantic authority. Each candidate is

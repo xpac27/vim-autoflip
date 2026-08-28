@@ -1,5 +1,18 @@
 # Technical debt and intentional limitations
 
+## 2026-08-28 20:55 CEST - Selected type remains buffer-scoped
+
+Impact: cursor reveal now exposes only the selected type, but that one source
+spelling appears in every split displaying the same buffer.
+
+Reason: the selected virtual-text property is buffer-owned. Removing it only
+in the active window has no public Vim representation; retaining it would show
+the source and replacement together.
+
+Risk: another split briefly exposes the same selected type. Every unrelated
+type remains concealed. Future window-local property visibility could narrow
+the selected omission to the active split.
+
 ## 2026-08-28 20:29 CEST - clangd AST extension dependency
 
 Impact: `same-type-copies` is unavailable when clangd does not advertise
@@ -28,7 +41,7 @@ Risk: complex safe copies remain explicit, and a visible region with many
 candidates adds bounded clangd work. Expansion requires a structured AST
 fixture and deterministic rejection tests for every new declaration shape.
 
-## 2026-08-28 19:41 CEST - Buffer-wide cursor reveal
+## 2026-08-28 19:41 CEST - Buffer-wide cursor reveal (superseded)
 
 Impact: holding the cursor inside a rendered source type reveals the original
 spelling in every split displaying that buffer until the active cursor leaves
@@ -41,6 +54,9 @@ and screen cursor displacement.
 Risk: another split can show source for longer than the former debounce
 interval. Source integrity is unaffected. Window-local virtual-text visibility
 in a future Vim release would permit independent per-window cursor reveals.
+
+Superseded at 2026-08-28 20:55 CEST: cursor reveal now omits only its selected
+TypeView. The cross-split limitation remains only for that one type.
 
 ## 2026-08-28 18:06 CEST - Buffer-wide reveal
 
