@@ -85,6 +85,26 @@ assert_match('stale=1', core.Status())
 core.Disable()
 bwipe!
 
+# Large visible regions are capped, and scrolling alone creates no request.
+new
+setlocal filetype=cpp
+setline(1, range(1, 400)->mapnew((_, line) => printf('// line %d', line)))
+var original_max_lines = g:autoveil_max_visible_lines
+g:autoveil_max_visible_lines = 10
+g:autoveil_test_lsp.delay_ms = 0
+g:autoveil_test_lsp.requests = []
+var large_state = core.State()
+large_state.mode = 'prefer-auto'
+core.Enable()
+var large_request = g:autoveil_test_lsp.requests[-1]
+assert_true(large_request.range.end.line - large_request.range.start.line < 10)
+var request_count = len(g:autoveil_test_lsp.requests)
+normal! G
+assert_equal(request_count, len(g:autoveil_test_lsp.requests))
+core.Disable()
+g:autoveil_max_visible_lines = original_max_lines
+bwipe!
+
 unlet g:autoveil_test_lsp
 lsp.ResetForTest()
 g:autoveil_debounce_ms = original_debounce
