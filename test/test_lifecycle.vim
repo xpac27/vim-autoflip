@@ -144,8 +144,10 @@ core.SetViewsForTest([split_view])
 vsplit
 var inherited_win = win_getid()
 core.OnWindowEnter()
+assert_true(has_key(core.State().windows, string(inherited_win)))
+close
+assert_false(has_key(core.State().windows, string(inherited_win)))
 core.Disable()
 assert_equal(1, &l:conceallevel)
 assert_equal('nc', &l:concealcursor)
-close
 bwipe!
