@@ -31,6 +31,8 @@ g:autoveil_test_lsp = {
   inlay_hints: [{position: {line: 1, character: 31}, label: ': Iterator', kind: 1}],
 }
 lsp.ResetForTest()
+var original_debounce = g:autoveil_debounce_ms
+g:autoveil_debounce_ms = 10
 core.Enable()
 assert_equal(1, len(core.State().views))
 assert_equal('auto', values(core.State().views)[0].replacement)
@@ -58,6 +60,11 @@ core.Enable()
 assert_equal(1, len(core.State().views))
 assert_equal('Widget', values(core.State().views)[0].replacement)
 assert_false(&modified)
+core.OnInsertEnter()
+assert_equal([], prop_list(2))
+core.OnInsertLeave()
+sleep 20m
+assert_equal(1, len(prop_list(2)))
 core.Disable()
 bwipe!
 
@@ -80,6 +87,7 @@ bwipe!
 
 unlet g:autoveil_test_lsp
 lsp.ResetForTest()
+g:autoveil_debounce_ms = original_debounce
 
 # Missing vim-lsp is a clean waiting state on this isolated runtime path.
 new

@@ -8,6 +8,7 @@ import autoload 'autoveil/range.vim' as rangeutil
 
 const MODES = ['prefer-auto', 'show-deduced-types']
 const CPP_FILETYPES = ['c', 'cpp']
+const CPP_EXTENSIONS = ['cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']
 
 def NewState(bufnr: number): dict<any>
   return {
@@ -38,6 +39,15 @@ def SupportedFeatures(): bool
   return has('vim9script') && has('textprop') && has('conceal') && has('channel') && has('job')
 enddef
 
+def SupportedBuffer(): bool
+  if index(CPP_FILETYPES, &filetype) < 0
+    return false
+  endif
+  var extension = tolower(expand('%:e'))
+  # An unnamed cpp buffer is useful for scratch work and deterministic tests.
+  return empty(extension) ? &filetype ==# 'cpp' : index(CPP_EXTENSIONS, extension) >= 0
+enddef
+
 def StopTimer(state: dict<any>, key: string)
   var timer = get(state, key, -1)
   if timer > 0
@@ -58,8 +68,8 @@ export def Enable()
     echohl ErrorMsg | echomsg 'AutoVeil: ' .. state.status | echohl None
     return
   endif
-  if index(CPP_FILETYPES, &filetype) < 0
-    state.status = 'unavailable: current buffer is not C or C++'
+  if !SupportedBuffer()
+    state.status = 'unavailable: current buffer is not a supported C++ source/header'
     echohl ErrorMsg | echomsg 'AutoVeil: ' .. state.status | echohl None
     return
   endif

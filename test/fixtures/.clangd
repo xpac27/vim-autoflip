@@ -1,0 +1,5 @@
+InlayHints:
+  DeducedTypes: Yes
+Diagnostics:
+  ClangTidy:
+    Add: [modernize-use-auto]
