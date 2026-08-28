@@ -22,12 +22,24 @@ var uri = 'file:///tmp/actions.cpp'
 var requested = {start: {line: 0, character: 0}, end: {line: 4, character: 0}}
 var edit_range = LspRange(1, 2, 28)
 var valid = Action(uri, edit_range, 'auto')
+assert_true(actions.IsAutoSpelling('auto'))
+assert_true(actions.IsAutoSpelling('auto&'))
+assert_true(actions.IsAutoSpelling('const auto&'))
+assert_true(actions.IsAutoSpelling('auto *'))
+assert_true(actions.IsAutoSpelling('volatile auto&&'))
+assert_false(actions.IsAutoSpelling('decltype(auto)'))
 var views = actions.Normalize(bufnr(), uri, requested, [valid])
 assert_equal(1, len(views))
 assert_equal(2, views[0].lnum)
 assert_equal(3, views[0].col)
 assert_equal(26, views[0].length)
 assert_equal('auto', views[0].replacement)
+assert_equal('auto&', actions.Validate(bufnr(), uri, requested,
+  Action(uri, edit_range, 'auto&')).replacement)
+assert_equal('const auto&', actions.Validate(bufnr(), uri, requested,
+  Action(uri, edit_range, 'const auto&')).replacement)
+assert_equal('auto *', actions.Validate(bufnr(), uri, requested,
+  Action(uri, edit_range, 'auto *')).replacement)
 
 var wrong_diagnostic = deepcopy(valid)
 wrong_diagnostic.diagnostics[0].code = 'readability-identifier-naming'
