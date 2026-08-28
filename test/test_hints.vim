@@ -1,6 +1,6 @@
 vim9script
 
-import autoload 'autoveil/hints.vim' as hints
+import autoload 'autoflip/hints.vim' as hints
 
 def Hint(line: number, character: number, label: any, kind: number = 1): dict<any>
   return {position: {line: line, character: character}, label: label, kind: kind}

@@ -2,7 +2,7 @@
 
 enum class IntegrationState { Ready };
 
-void autoveil_integration_fixture() {
+void autoflip_integration_fixture() {
   std::vector<int> values;
   std::vector<int>::iterator it = values.begin();
   auto answer = 42;

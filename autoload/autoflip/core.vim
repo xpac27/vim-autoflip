@@ -1,12 +1,12 @@
 vim9script
 
-import autoload 'autoveil/render.vim' as render
-import autoload 'autoveil/actions.vim' as actions
-import autoload 'autoveil/copies.vim' as copies
-import autoload 'autoveil/hints.vim' as hints
-import autoload 'autoveil/lsp.vim' as lsp
-import autoload 'autoveil/range.vim' as rangeutil
-import autoload 'autoveil/types.vim' as types
+import autoload 'autoflip/render.vim' as render
+import autoload 'autoflip/actions.vim' as actions
+import autoload 'autoflip/copies.vim' as copies
+import autoload 'autoflip/hints.vim' as hints
+import autoload 'autoflip/lsp.vim' as lsp
+import autoload 'autoflip/range.vim' as rangeutil
+import autoload 'autoflip/types.vim' as types
 
 const MODES = ['prefer-auto', 'show-deduced-types']
 const PREFER_AUTO_LEVELS = ['conservative', 'same-type-copies']
@@ -16,7 +16,7 @@ const CPP_EXTENSIONS = ['cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']
 def NewState(bufnr: number): dict<any>
   return {
     enabled: false,
-    mode: get(g:, 'autoveil_mode', 'prefer-auto'),
+    mode: get(g:, 'autoflip_mode', 'prefer-auto'),
     generation: 0,
     changedtick: getbufvar(bufnr, 'changedtick'),
     pending_timer: -1,
@@ -32,10 +32,10 @@ def NewState(bufnr: number): dict<any>
 enddef
 
 export def State(bufnr: number = bufnr('%')): dict<any>
-  var state = getbufvar(bufnr, 'autoveil_state', {})
+  var state = getbufvar(bufnr, 'autoflip_state', {})
   if empty(state) && bufexists(bufnr)
     state = NewState(bufnr)
-    setbufvar(bufnr, 'autoveil_state', state)
+    setbufvar(bufnr, 'autoflip_state', state)
   endif
   return state
 enddef
@@ -70,12 +70,12 @@ export def Enable()
   endif
   if !SupportedFeatures()
     state.status = 'unavailable: Vim requires +vim9script +textprop +conceal +channel +job'
-    echohl ErrorMsg | echomsg 'AutoVeil: ' .. state.status | echohl None
+    echohl ErrorMsg | echomsg 'AutoFlip: ' .. state.status | echohl None
     return
   endif
   if !SupportedBuffer()
     state.status = 'unavailable: current buffer is not a supported C++ source/header'
-    echohl ErrorMsg | echomsg 'AutoVeil: ' .. state.status | echohl None
+    echohl ErrorMsg | echomsg 'AutoFlip: ' .. state.status | echohl None
     return
   endif
   if index(MODES, state.mode) < 0
@@ -118,7 +118,7 @@ enddef
 
 export def SetMode(mode: string)
   if index(MODES, mode) < 0
-    echohl ErrorMsg | echomsg 'AutoVeil: invalid mode: ' .. mode | echohl None
+    echohl ErrorMsg | echomsg 'AutoFlip: invalid mode: ' .. mode | echohl None
     return
   endif
   var state = State()
@@ -137,15 +137,15 @@ export def SetMode(mode: string)
 enddef
 
 def PreferAutoLevel(): string
-  return get(g:, 'autoveil_prefer_auto_level', 'conservative')
+  return get(g:, 'autoflip_prefer_auto_level', 'conservative')
 enddef
 
 export def SetPreferAutoLevel(level: string)
   if index(PREFER_AUTO_LEVELS, level) < 0
-    echohl ErrorMsg | echomsg 'AutoVeil: invalid prefer-auto level: ' .. level | echohl None
+    echohl ErrorMsg | echomsg 'AutoFlip: invalid prefer-auto level: ' .. level | echohl None
     return
   endif
-  g:autoveil_prefer_auto_level = level
+  g:autoflip_prefer_auto_level = level
   var state = State()
   if state.mode !=# 'prefer-auto'
     return
@@ -218,7 +218,7 @@ export def Refresh(force: bool = false)
   if request_mode ==# 'prefer-auto'
     if prefer_auto_level ==# 'same-type-copies'
       var candidates = copies.Candidates(bufnr, requested,
-        max([0, get(g:, 'autoveil_max_ast_requests', 40)]))
+        max([0, get(g:, 'autoflip_max_ast_requests', 40)]))
       lsp.RequestPreferAuto(bufnr, requested, candidates, Callback)
     else
       lsp.RequestCodeActions(bufnr, requested, Callback)
@@ -231,7 +231,7 @@ enddef
 def VisibleRange(): dict<any>
   var first = max([1, line('w0') - 5])
   var last = min([line('$'), line('w$') + 5])
-  var maximum = max([1, get(g:, 'autoveil_max_visible_lines', 300)])
+  var maximum = max([1, get(g:, 'autoflip_max_visible_lines', 300)])
   if last - first + 1 > maximum
     last = first + maximum - 1
   endif
@@ -291,7 +291,7 @@ def HandleReply(
     endif
   else
     fresh = hints.Normalize(bufnr, requested, get(response, 'result', []),
-      get(g:, 'autoveil_type_name_limit', 80))
+      get(g:, 'autoflip_type_name_limit', 80))
   endif
   for id in keys(copy(state.views))
     if ViewInside(state.views[id], requested)
@@ -334,7 +334,7 @@ export def Reveal()
   StopTimer(state, 'reveal_timer')
   state.reveal_source = 'timer'
   render.Reveal(reveal_bufnr, state)
-  var delay = max([get(g:, 'autoveil_debounce_ms', 300), 50])
+  var delay = max([get(g:, 'autoflip_debounce_ms', 300), 50])
   var generation = state.generation
   state.reveal_timer = timer_start(delay, (_) => EndReveal(reveal_bufnr, generation))
 enddef
@@ -367,7 +367,7 @@ export def OnWindowEnter()
 enddef
 
 export def OnBufferChanged()
-  var state = get(b:, 'autoveil_state', {})
+  var state = get(b:, 'autoflip_state', {})
   if empty(state) || !state.enabled
     return
   endif
@@ -383,7 +383,7 @@ export def OnBufferChanged()
   render.ClearMatches(state)
   StopTimer(state, 'pending_timer')
   var generation = state.generation
-  state.pending_timer = timer_start(get(g:, 'autoveil_debounce_ms', 300),
+  state.pending_timer = timer_start(get(g:, 'autoflip_debounce_ms', 300),
     (_) => DebouncedRefresh(bufnr('%'), generation))
 enddef
 
@@ -402,8 +402,8 @@ def DebouncedRefresh(bufnr: number, generation: number)
 enddef
 
 export def OnInsertEnter()
-  var state = get(b:, 'autoveil_state', {})
-  if !empty(state) && state.enabled && get(g:, 'autoveil_reveal_on_insert', true)
+  var state = get(b:, 'autoflip_state', {})
+  if !empty(state) && state.enabled && get(g:, 'autoflip_reveal_on_insert', true)
     StopTimer(state, 'reveal_timer')
     state.reveal_source = 'insert'
     state.revealed_view_id = ''
@@ -412,7 +412,7 @@ export def OnInsertEnter()
 enddef
 
 export def OnInsertLeave()
-  var state = get(b:, 'autoveil_state', {})
+  var state = get(b:, 'autoflip_state', {})
   if !empty(state) && state.enabled
     state.revealed = false
     state.revealed_view_id = ''
@@ -431,8 +431,8 @@ def ViewUnderCursor(state: dict<any>): dict<any>
 enddef
 
 export def OnCursorMoved()
-  var state = get(b:, 'autoveil_state', {})
-  if empty(state) || !state.enabled || !get(g:, 'autoveil_reveal_under_cursor', true)
+  var state = get(b:, 'autoflip_state', {})
+  if empty(state) || !state.enabled || !get(g:, 'autoflip_reveal_under_cursor', true)
     return
   endif
   var view = ViewUnderCursor(state)
@@ -455,7 +455,7 @@ export def OnCursorMoved()
 enddef
 
 export def OnWindowLeave()
-  var state = get(b:, 'autoveil_state', {})
+  var state = get(b:, 'autoflip_state', {})
   if !empty(state) && state.enabled && state.reveal_source ==# 'cursor'
     state.revealed = false
     state.revealed_view_id = ''
@@ -465,7 +465,7 @@ export def OnWindowLeave()
 enddef
 
 export def OnLspEvent()
-  var state = get(b:, 'autoveil_state', {})
+  var state = get(b:, 'autoflip_state', {})
   if !empty(state) && state.enabled
     OnBufferChanged()
   endif
@@ -473,7 +473,7 @@ enddef
 
 export def OnWindowClosed(winid: number)
   for bufnr in range(1, bufnr('$'))
-    var state = getbufvar(bufnr, 'autoveil_state', {})
+    var state = getbufvar(bufnr, 'autoflip_state', {})
     if !empty(state) && has_key(state.windows, string(winid))
       render.RestoreWindow(winid, state)
     endif
@@ -481,7 +481,7 @@ export def OnWindowClosed(winid: number)
 enddef
 
 export def OnBufferWipeout(bufnr: number)
-  var state = getbufvar(bufnr, 'autoveil_state', {})
+  var state = getbufvar(bufnr, 'autoflip_state', {})
   if empty(state)
     return
   endif
@@ -493,7 +493,7 @@ enddef
 
 export def Status(): string
   var state = State()
-  return printf('AutoVeil: %s; mode=%s; prefer-auto-level=%s; generation=%d; changedtick=%d; substitutions=%d; windows=%d; stale=%d',
+  return printf('AutoFlip: %s; mode=%s; prefer-auto-level=%s; generation=%d; changedtick=%d; substitutions=%d; windows=%d; stale=%d',
     state.status, state.mode, PreferAutoLevel(), state.generation, state.changedtick, len(state.views), len(state.windows),
     state.debug->filter((_, entry) => entry =~# '^discarded stale')->len())
 enddef

@@ -1,8 +1,8 @@
 vim9script
 
-import autoload 'autoveil/range.vim' as rangeutil
-import autoload 'autoveil/syntax.vim' as syntax
-import autoload 'autoveil/types.vim' as types
+import autoload 'autoflip/range.vim' as rangeutil
+import autoload 'autoflip/syntax.vim' as syntax
+import autoload 'autoflip/types.vim' as types
 
 def LabelText(label: any): string
   if type(label) == v:t_string

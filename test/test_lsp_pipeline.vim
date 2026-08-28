@@ -1,8 +1,8 @@
 vim9script
 
-import autoload 'autoveil/core.vim' as core
-import autoload 'autoveil/copies.vim' as copies
-import autoload 'autoveil/lsp.vim' as lsp
+import autoload 'autoflip/core.vim' as core
+import autoload 'autoflip/copies.vim' as copies
+import autoload 'autoflip/lsp.vim' as lsp
 
 def LspRange(line: number, start: number, finish: number): dict<any>
   return {start: {line: line, character: start}, end: {line: line, character: finish}}
@@ -21,7 +21,7 @@ setlocal filetype=cpp
 setline(1, ['void f() {', '  std::vector<int>::iterator it = values.begin();', '}'])
 setlocal nomodified
 var uri = 'file:///pipeline.cpp'
-g:autoveil_test_lsp = {
+g:autoflip_test_lsp = {
   available: true,
   attached: true,
   supports_code_actions: true,
@@ -32,18 +32,18 @@ g:autoveil_test_lsp = {
   inlay_hints: [{position: {line: 1, character: 31}, label: ': Iterator', kind: 1}],
 }
 lsp.ResetForTest()
-var original_debounce = g:autoveil_debounce_ms
-g:autoveil_debounce_ms = 10
+var original_debounce = g:autoflip_debounce_ms
+g:autoflip_debounce_ms = 10
 core.Enable()
 assert_equal(1, len(core.State().views))
 assert_equal('auto', values(core.State().views)[0].replacement)
-assert_equal('code-actions', g:autoveil_test_lsp.requests[0].kind)
+assert_equal('code-actions', g:autoflip_test_lsp.requests[0].kind)
 assert_false(&modified)
 
 core.SetMode('show-deduced-types')
 assert_equal(0, len(core.State().views))
 # The source declaration is explicit, so the mock hint is correctly rejected.
-assert_equal('inlay-hints', g:autoveil_test_lsp.requests[-1].kind)
+assert_equal('inlay-hints', g:autoflip_test_lsp.requests[-1].kind)
 core.Disable()
 bwipe!
 
@@ -71,23 +71,23 @@ var copy_ast = {
     },
   ],
 }
-g:autoveil_test_lsp.supports_ast = true
-g:autoveil_test_lsp.code_actions = []
-g:autoveil_test_lsp.ast_responses = [{candidate: copy_candidate, node: copy_ast}]
-g:autoveil_test_lsp.requests = []
-g:autoveil_prefer_auto_level = 'same-type-copies'
+g:autoflip_test_lsp.supports_ast = true
+g:autoflip_test_lsp.code_actions = []
+g:autoflip_test_lsp.ast_responses = [{candidate: copy_candidate, node: copy_ast}]
+g:autoflip_test_lsp.requests = []
+g:autoflip_prefer_auto_level = 'same-type-copies'
 var copy_state = core.State()
 copy_state.mode = 'prefer-auto'
 core.Enable()
 assert_equal(1, len(core.State().views))
 assert_equal('auto', values(core.State().views)[0].replacement)
 assert_equal(['code-actions', 'asts'],
-  g:autoveil_test_lsp.requests->mapnew((_, request) => request.kind))
-assert_equal('c', g:autoveil_test_lsp.requests[1].candidates[0].identifier)
+  g:autoflip_test_lsp.requests->mapnew((_, request) => request.kind))
+assert_equal('c', g:autoflip_test_lsp.requests[1].candidates[0].identifier)
 assert_false(&modified)
 core.SetPreferAutoLevel('conservative')
 assert_equal(0, len(core.State().views))
-assert_equal('code-actions', g:autoveil_test_lsp.requests[-1].kind)
+assert_equal('code-actions', g:autoflip_test_lsp.requests[-1].kind)
 core.Disable()
 bwipe!
 
@@ -95,8 +95,8 @@ bwipe!
 new
 setlocal filetype=cpp
 setline(1, ['void copies() {', '  State c = a;', '}'])
-g:autoveil_prefer_auto_level = 'same-type-copies'
-g:autoveil_test_lsp.supports_ast = false
+g:autoflip_prefer_auto_level = 'same-type-copies'
+g:autoflip_test_lsp.supports_ast = false
 var unsupported_state = core.State()
 unsupported_state.mode = 'prefer-auto'
 core.Enable()
@@ -104,17 +104,17 @@ assert_match('does not advertise AST support', core.Status())
 assert_equal(0, len(core.State().views))
 core.Disable()
 bwipe!
-g:autoveil_test_lsp.supports_ast = true
-g:autoveil_prefer_auto_level = 'conservative'
+g:autoflip_test_lsp.supports_ast = true
+g:autoflip_prefer_auto_level = 'conservative'
 
 # Changing the authority level invalidates an in-flight combined response.
 new
 setlocal filetype=cpp
 setline(1, ['void copies() {', '  State c = a;', '}'])
 copy_candidate = copies.Candidates(bufnr(), copy_requested, 10)[0]
-g:autoveil_test_lsp.ast_responses = [{candidate: copy_candidate, node: copy_ast}]
-g:autoveil_test_lsp.delay_ms = 20
-g:autoveil_prefer_auto_level = 'same-type-copies'
+g:autoflip_test_lsp.ast_responses = [{candidate: copy_candidate, node: copy_ast}]
+g:autoflip_test_lsp.delay_ms = 20
+g:autoflip_prefer_auto_level = 'same-type-copies'
 var changing_state = core.State()
 changing_state.mode = 'prefer-auto'
 core.Enable()
@@ -124,16 +124,16 @@ assert_equal(0, len(core.State().views))
 assert_match('stale=1', core.Status())
 core.Disable()
 bwipe!
-g:autoveil_test_lsp.delay_ms = 0
+g:autoflip_test_lsp.delay_ms = 0
 
 new
 setlocal filetype=cpp
 setline(1, ['void f() {', '  auto item = make_item();', '}'])
 setlocal nomodified
-g:autoveil_test_lsp.inlay_hints = [
+g:autoflip_test_lsp.inlay_hints = [
   {position: {line: 1, character: 11}, label: ': Widget', kind: 1},
 ]
-g:autoveil_mode = 'show-deduced-types'
+g:autoflip_mode = 'show-deduced-types'
 var deduced_state = core.State()
 deduced_state.mode = 'show-deduced-types'
 core.Enable()
@@ -152,8 +152,8 @@ bwipe!
 new
 setlocal filetype=cpp
 setline(1, ['void f() {', '  std::vector<int>::iterator it = values.begin();', '}'])
-g:autoveil_test_lsp.code_actions = [ModernizeAction(uri)]
-g:autoveil_test_lsp.delay_ms = 20
+g:autoflip_test_lsp.code_actions = [ModernizeAction(uri)]
+g:autoflip_test_lsp.delay_ms = 20
 var stale_state = core.State()
 stale_state.mode = 'prefer-auto'
 core.Enable()
@@ -169,25 +169,25 @@ bwipe!
 new
 setlocal filetype=cpp
 setline(1, range(1, 400)->mapnew((_, line) => printf('// line %d', line)))
-var original_max_lines = g:autoveil_max_visible_lines
-g:autoveil_max_visible_lines = 10
-g:autoveil_test_lsp.delay_ms = 0
-g:autoveil_test_lsp.requests = []
+var original_max_lines = g:autoflip_max_visible_lines
+g:autoflip_max_visible_lines = 10
+g:autoflip_test_lsp.delay_ms = 0
+g:autoflip_test_lsp.requests = []
 var large_state = core.State()
 large_state.mode = 'prefer-auto'
 core.Enable()
-var large_request = g:autoveil_test_lsp.requests[-1]
+var large_request = g:autoflip_test_lsp.requests[-1]
 assert_true(large_request.range.end.line - large_request.range.start.line < 10)
-var request_count = len(g:autoveil_test_lsp.requests)
+var request_count = len(g:autoflip_test_lsp.requests)
 normal! G
-assert_equal(request_count, len(g:autoveil_test_lsp.requests))
+assert_equal(request_count, len(g:autoflip_test_lsp.requests))
 core.Disable()
-g:autoveil_max_visible_lines = original_max_lines
+g:autoflip_max_visible_lines = original_max_lines
 bwipe!
 
-unlet g:autoveil_test_lsp
+unlet g:autoflip_test_lsp
 lsp.ResetForTest()
-g:autoveil_debounce_ms = original_debounce
+g:autoflip_debounce_ms = original_debounce
 
 # Missing vim-lsp is a clean waiting state on this isolated runtime path.
 new

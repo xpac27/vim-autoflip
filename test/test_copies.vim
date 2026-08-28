@@ -1,6 +1,6 @@
 vim9script
 
-import autoload 'autoveil/copies.vim' as copies
+import autoload 'autoflip/copies.vim' as copies
 
 def LspRange(line: number, start: number, finish: number): dict<any>
   return {start: {line: line, character: start}, end: {line: line, character: finish}}

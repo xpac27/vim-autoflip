@@ -1,7 +1,7 @@
-if exists('g:autoloaded_autoveil_fake_lsp')
+if exists('g:autoloaded_autoflip_fake_lsp')
   finish
 endif
-let g:autoloaded_autoveil_fake_lsp = 1
+let g:autoloaded_autoflip_fake_lsp = 1
 
 function! lsp#get_allowed_servers(bufnr) abort
   return ['clangd']
@@ -24,12 +24,12 @@ function! lsp#get_text_document_identifier(bufnr) abort
 endfunction
 
 function! lsp#register_notifications(name, Callback) abort
-  let g:AutoveilFakeNotificationCallback = a:Callback
+  let g:AutoflipFakeNotificationCallback = a:Callback
 endfunction
 
 function! lsp#send_request(server, request) abort
-  let g:autoveil_fake_request = deepcopy(a:request)
+  let g:autoflip_fake_request = deepcopy(a:request)
   call a:request.on_notification({
-        \ 'response': {'result': get(g:, 'autoveil_fake_result', [])},
+        \ 'response': {'result': get(g:, 'autoflip_fake_result', [])},
         \ })
 endfunction

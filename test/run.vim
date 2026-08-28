@@ -3,8 +3,9 @@ set nomore
 set noswapfile
 set encoding=utf-8
 execute 'set runtimepath^=' .. fnameescape(fnamemodify(expand('<sfile>'), ':p:h:h'))
-runtime plugin/autoveil.vim
+runtime plugin/autoflip.vim
 
+source test/test_identity.vim
 source test/test_types.vim
 source test/test_range.vim
 source test/test_actions.vim

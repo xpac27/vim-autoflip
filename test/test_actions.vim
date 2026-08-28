@@ -1,6 +1,6 @@
 vim9script
 
-import autoload 'autoveil/actions.vim' as actions
+import autoload 'autoflip/actions.vim' as actions
 
 def LspRange(line: number, start: number, finish: number): dict<any>
   return {start: {line: line, character: start}, end: {line: line, character: finish}}

@@ -1,7 +1,7 @@
 vim9script
 
-import autoload 'autoveil/core.vim' as core
-import autoload 'autoveil/types.vim' as types
+import autoload 'autoflip/core.vim' as core
+import autoload 'autoflip/types.vim' as types
 
 new
 setlocal filetype=cpp
@@ -57,14 +57,14 @@ normal! yy
 assert_equal(adjacent .. "\n", getreg('"'))
 assert_equal(adjacent, getline(1))
 assert_false(&modified)
-var old_debounce = g:autoveil_debounce_ms
-g:autoveil_debounce_ms = 10
+var old_debounce = g:autoflip_debounce_ms
+g:autoflip_debounce_ms = 10
 core.Reveal()
 assert_equal([], prop_list(1))
 assert_equal([], getmatches()->filter((_, m) => m.group ==# 'Conceal'))
 sleep 60m
 assert_equal(2, len(prop_list(1)))
-g:autoveil_debounce_ms = old_debounce
+g:autoflip_debounce_ms = old_debounce
 core.Disable()
 bwipe!
 
@@ -79,8 +79,8 @@ core.Enable()
 var cursor_view = types.NewView('prefer-auto', 2, 3, 26, 'auto')
 var other_view = types.NewView('prefer-auto', 3, 3, 10, 'auto')
 core.SetViewsForTest([cursor_view, other_view])
-var cursor_debounce = g:autoveil_debounce_ms
-g:autoveil_debounce_ms = 10
+var cursor_debounce = g:autoflip_debounce_ms
+g:autoflip_debounce_ms = 10
 cursor(2, 4)
 core.OnCursorMoved()
 assert_false(core.State().revealed)
@@ -116,7 +116,7 @@ assert_false(core.State().revealed)
 assert_equal('', core.State().revealed_view_id)
 assert_equal(1, len(prop_list(2)))
 assert_equal(1, len(prop_list(3)))
-g:autoveil_debounce_ms = cursor_debounce
+g:autoflip_debounce_ms = cursor_debounce
 core.Disable()
 bwipe!
 
@@ -194,7 +194,7 @@ assert_equal([], timer_info(pending))
 
 # Listed non-C++ extensions are enforced; .c is outside the product scope.
 new
-file autoveil-unsupported.c
+file autoflip-unsupported.c
 setlocal filetype=c
 core.Enable()
 assert_false(core.State().enabled)

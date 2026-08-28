@@ -1,6 +1,6 @@
 vim9script
 
-import autoload 'autoveil/range.vim' as rangeutil
+import autoload 'autoflip/range.vim' as rangeutil
 
 new
 setline(1, 'a😀z')

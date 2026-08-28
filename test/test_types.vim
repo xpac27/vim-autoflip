@@ -1,6 +1,6 @@
 vim9script
 
-import autoload 'autoveil/types.vim' as types
+import autoload 'autoflip/types.vim' as types
 
 var view = types.NewView('prefer-auto', 2, 4, 12, 'const auto&')
 assert_true(types.IsView(view))

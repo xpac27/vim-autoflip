@@ -1,13 +1,13 @@
 vim9script
 
-import autoload 'autoveil/actions.vim' as actions
-import autoload 'autoveil/range.vim' as rangeutil
+import autoload 'autoflip/actions.vim' as actions
+import autoload 'autoflip/range.vim' as rangeutil
 
 var initialized = false
 var diagnostics: dict<any> = {}
 
 def TestAdapter(): dict<any>
-  return get(g:, 'autoveil_test_lsp', {})
+  return get(g:, 'autoflip_test_lsp', {})
 enddef
 
 export def DependencyAvailable(): bool
@@ -108,7 +108,7 @@ export def Initialize()
   if initialized || !DependencyAvailable() || !empty(TestAdapter())
     return
   endif
-  call('lsp#register_notifications', ['autoveil', (server, data) => OnNotification(server, data)])
+  call('lsp#register_notifications', ['autoflip', (server, data) => OnNotification(server, data)])
   initialized = true
 enddef
 
@@ -324,7 +324,7 @@ enddef
 export def CurrentUri(bufnr: number): string
   var test = TestAdapter()
   if !empty(test)
-    return get(test, 'uri', 'file:///autoveil-test.cpp')
+    return get(test, 'uri', 'file:///autoflip-test.cpp')
   endif
   if !DependencyAvailable()
     return ''

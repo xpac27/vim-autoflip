@@ -1,14 +1,14 @@
 vim9script
 
-const AUTO_PROP = 'autoveil_auto'
-const DEDUCED_PROP = 'autoveil_deduced'
+const AUTO_PROP = 'autoflip_auto'
+const DEDUCED_PROP = 'autoflip_deduced'
 
 def EnsureTypes(bufnr: number)
   if empty(prop_type_get(AUTO_PROP, {bufnr: bufnr}))
-    prop_type_add(AUTO_PROP, {bufnr: bufnr, highlight: 'AutoVeilAuto'})
+    prop_type_add(AUTO_PROP, {bufnr: bufnr, highlight: 'AutoFlipAuto'})
   endif
   if empty(prop_type_get(DEDUCED_PROP, {bufnr: bufnr}))
-    prop_type_add(DEDUCED_PROP, {bufnr: bufnr, highlight: 'AutoVeilDeducedType'})
+    prop_type_add(DEDUCED_PROP, {bufnr: bufnr, highlight: 'AutoFlipDeducedType'})
   endif
 enddef
 
