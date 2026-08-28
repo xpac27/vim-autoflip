@@ -1,0 +1,16 @@
+set nocompatible
+set nomore
+set noswapfile
+set encoding=utf-8
+execute 'set runtimepath^=' .. fnameescape(fnamemodify(expand('<sfile>'), ':p:h:h'))
+runtime plugin/autoveil.vim
+
+source test/test_types.vim
+source test/test_lifecycle.vim
+
+if !empty(v:errors)
+  call writefile(v:errors, '/dev/stderr')
+  cquit
+endif
+qall!
+
