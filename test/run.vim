@@ -6,6 +6,9 @@ execute 'set runtimepath^=' .. fnameescape(fnamemodify(expand('<sfile>'), ':p:h:
 runtime plugin/autoveil.vim
 
 source test/test_types.vim
+source test/test_range.vim
+source test/test_actions.vim
+source test/test_hints.vim
 source test/test_lifecycle.vim
 
 if !empty(v:errors)
@@ -13,4 +16,3 @@ if !empty(v:errors)
   cquit
 endif
 qall!
-
