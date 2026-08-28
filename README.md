@@ -65,6 +65,15 @@ raw inlay-hint request; vim-lsp's renderer can remain disabled (its default):
 let g:lsp_inlay_hints_enabled = 0
 ```
 
+clang-tidy also publishes `modernize-use-auto` diagnostics that vim-lsp may
+show beside AutoFlip's replacement. To hide this redundant text, disable all
+diagnostic virtual text before vim-lsp loads; signs, highlights, diagnostic
+lists, and AutoFlip continue to work:
+
+```vim
+let g:lsp_diagnostics_virtual_text_enabled = 0
+```
+
 In the project root, enable the clang-tidy check and deduced-type hints:
 
 ```yaml
