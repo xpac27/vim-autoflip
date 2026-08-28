@@ -8,6 +8,7 @@ runtime plugin/autoveil.vim
 source test/test_types.vim
 source test/test_range.vim
 source test/test_actions.vim
+source test/test_copies.vim
 source test/test_hints.vim
 source test/test_lifecycle.vim
 source test/test_lsp_pipeline.vim
