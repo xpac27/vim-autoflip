@@ -1,6 +1,7 @@
 :AutoVeilDisable	autoveil.txt	/*:AutoVeilDisable*
 :AutoVeilEnable	autoveil.txt	/*:AutoVeilEnable*
 :AutoVeilMode	autoveil.txt	/*:AutoVeilMode*
+:AutoVeilPreferAutoLevel	autoveil.txt	/*:AutoVeilPreferAutoLevel*
 :AutoVeilRefresh	autoveil.txt	/*:AutoVeilRefresh*
 :AutoVeilReveal	autoveil.txt	/*:AutoVeilReveal*
 :AutoVeilStatus	autoveil.txt	/*:AutoVeilStatus*
@@ -16,8 +17,10 @@ autoveil-troubleshooting	autoveil.txt	/*autoveil-troubleshooting*
 autoveil.txt	autoveil.txt	/*autoveil.txt*
 g:autoveil_debounce_ms	autoveil.txt	/*g:autoveil_debounce_ms*
 g:autoveil_enabled_by_default	autoveil.txt	/*g:autoveil_enabled_by_default*
+g:autoveil_max_ast_requests	autoveil.txt	/*g:autoveil_max_ast_requests*
 g:autoveil_max_visible_lines	autoveil.txt	/*g:autoveil_max_visible_lines*
 g:autoveil_mode	autoveil.txt	/*g:autoveil_mode*
+g:autoveil_prefer_auto_level	autoveil.txt	/*g:autoveil_prefer_auto_level*
 g:autoveil_reveal_on_insert	autoveil.txt	/*g:autoveil_reveal_on_insert*
 g:autoveil_reveal_under_cursor	autoveil.txt	/*g:autoveil_reveal_under_cursor*
 g:autoveil_type_name_limit	autoveil.txt	/*g:autoveil_type_name_limit*

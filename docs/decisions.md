@@ -1,5 +1,26 @@
 # Architecture decisions
 
+## 2026-08-28 20:29 CEST - Add clangd AST as an opt-in authority
+
+Reason:
+
+- clang-tidy intentionally emits no action for plain same-type copies;
+- clangd's structured AST distinguishes direct value copies from implicit
+  conversions and supplies exact source ranges;
+- vim-lsp's public generic request API preserves the existing integration
+  boundary and source remains untouched;
+- retaining conservative mode as the default preserves version 1 behavior.
+
+Rejected:
+
+- loosen the lexical validator: no semantic proof and violates fail-closed
+  behavior;
+- parse hover text or AST `arcana`: human-oriented, unstable strings;
+- send speculative `didChange` messages with `auto`: corrupts clangd's view of
+  the document and races other LSP features;
+- run clang-query, clang-tidy plugins, or clangd directly: bypasses the required
+  vim-lsp lifecycle and adds deployment burden.
+
 ## 2026-08-28 19:41 CEST - Pin cursor reveal to the source range
 
 Reason:

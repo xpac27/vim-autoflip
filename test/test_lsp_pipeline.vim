@@ -107,6 +107,25 @@ bwipe!
 g:autoveil_test_lsp.supports_ast = true
 g:autoveil_prefer_auto_level = 'conservative'
 
+# Changing the authority level invalidates an in-flight combined response.
+new
+setlocal filetype=cpp
+setline(1, ['void copies() {', '  State c = a;', '}'])
+copy_candidate = copies.Candidates(bufnr(), copy_requested, 10)[0]
+g:autoveil_test_lsp.ast_responses = [{candidate: copy_candidate, node: copy_ast}]
+g:autoveil_test_lsp.delay_ms = 20
+g:autoveil_prefer_auto_level = 'same-type-copies'
+var changing_state = core.State()
+changing_state.mode = 'prefer-auto'
+core.Enable()
+core.SetPreferAutoLevel('conservative')
+sleep 50m
+assert_equal(0, len(core.State().views))
+assert_match('stale=1', core.Status())
+core.Disable()
+bwipe!
+g:autoveil_test_lsp.delay_ms = 0
+
 new
 setlocal filetype=cpp
 setline(1, ['void f() {', '  auto item = make_item();', '}'])

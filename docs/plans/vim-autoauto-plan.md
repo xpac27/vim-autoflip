@@ -227,6 +227,25 @@ manufacture compiler flags.
 
 ## Commands and configuration
 
+### Implemented optional authority adjustment (2026-08-28 20:29 CEST)
+
+The initial product deliberately made clang-tidy `modernize-use-auto` the sole
+prefer-auto authority. It intentionally offers no action for plain copies such
+as `State c = a`, and its configuration options cannot broaden that policy.
+
+At the user's explicit request, prefer-auto now exposes a conservative default
+and an opt-in `same-type-copies` level. The additional level uses clangd's
+advertised `textDocument/ast` extension through public vim-lsp APIs. A lexical
+pass only discovers bounded, simple `Type target = source;` request ranges;
+structured clangd AST fields must then prove the exact variable/type ranges
+and an `LValueToRValue` conversion over the expected `DeclRef`. Human-oriented
+hover or `arcana` text is not parsed. Unsupported servers and ambiguous nodes
+fail closed, and the original clang-tidy path remains unchanged.
+
+This is the smallest safe scope adjustment that covers the motivating `c` and
+`d` enum copies without introducing a direct Clang process, speculative server
+document edits, or regex-based semantic authority.
+
 Provide these commands:
 
 - `:AutoVeilEnable` — enable for the current buffer.
@@ -234,6 +253,8 @@ Provide these commands:
 - `:AutoVeilToggle` — toggle it.
 - `:AutoVeilMode prefer-auto` — display safe `auto` spellings.
 - `:AutoVeilMode show-deduced-types` — display full inferred type spellings.
+- `:AutoVeilPreferAutoLevel {level}` — select conservative or opt-in
+  same-type-copies authority.
 - `:AutoVeilRefresh` — force a new LSP query for the visible region.
 - `:AutoVeilReveal` — temporarily show real types in the current window.
 - `:AutoVeilStatus` — report prerequisites, LSP attachment, cache generation,
@@ -249,6 +270,8 @@ g:autoveil_reveal_on_insert = true
 g:autoveil_reveal_under_cursor = true
 g:autoveil_max_visible_lines = 300
 g:autoveil_type_name_limit = 80
+g:autoveil_prefer_auto_level = 'conservative'
+g:autoveil_max_ast_requests = 40
 ```
 
 Make the plugin opt-in by default. Do not globally override mappings. If a

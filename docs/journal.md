@@ -1,5 +1,22 @@
 # Engineering journal
 
+## 2026-08-28 20:29 CEST - Add opt-in same-type copies
+
+- Confirmed clang-tidy's `MinTypeNameLength` and `RemoveStars` options do not
+  broaden `modernize-use-auto` to declarations such as `State c = a`.
+- Inspected current clangd protocol documentation and a real response for the
+  reported declaration. clangd advertises `astProvider`; `textDocument/ast`
+  returned an exact `Var`, type range, and `LValueToRValue`/`DeclRef` tree.
+- Rejected hover markup, clangd `arcana` parsing, speculative `didChange`,
+  direct tool processes, and unverified lexical replacement as authorities.
+- Added a bounded lexical discovery pass, a strict structured-AST validator,
+  public vim-lsp AST requests, combined reply/staleness handling, runtime
+  policy switching, diagnostics, and documentation.
+- Deterministic tests cover accepted copies, conversion rejection, malformed
+  ranges/nodes, capability failure, policy switching, and display-only state.
+- The optional real integration rendered two distinct AST-proven copies plus
+  existing clang-tidy and inlay-hint views without changing the buffer.
+
 ## 2026-08-28 19:41 CEST - Fix cursor reveal expiry
 
 - Reproduced the report with a deterministic headless test: entering an

@@ -1,5 +1,14 @@
 # Glossary
 
+## 2026-08-28 20:29 CEST - Prefer-auto levels
+
+- **conservative**: the default prefer-auto level, authorized exclusively by a
+  direct clang-tidy `modernize-use-auto` code action.
+- **same-type-copies**: an opt-in superset that also accepts a narrow local
+  copy declaration when clangd's structured AST proves the supported shape.
+- **AST candidate**: a lexically discovered request range with no authority of
+  its own; it becomes a TypeView only after clangd AST validation.
+
 ## 2026-08-28 19:41 CEST - Reveal ownership
 
 - **cursor-pinned reveal**: a reveal that persists while the active cursor is

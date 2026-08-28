@@ -56,6 +56,13 @@ assert_equal(candidate.range, g:autoveil_fake_request.params.range)
 assert_equal(candidate, response.result[0].candidate)
 assert_equal('Var', response.result[0].node.kind)
 
+response = {}
+g:autoveil_fake_result = []
+lsp.RequestAsts(bufnr(), [candidate], Callback)
+assert_true(response.ok)
+assert_equal(1, response.errors)
+assert_equal([], response.result)
+
 execute 'set runtimepath-=' .. fnameescape(fnamemodify(expand('<sfile>'), ':p:h') .. '/fake_lsp')
 unlet! g:AutoveilFakeNotificationCallback
 unlet! g:autoveil_fake_request

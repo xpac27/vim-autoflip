@@ -3,8 +3,9 @@
 AutoVeil is a display-only C++ type viewer for current Vim 9.x. It has two
 modes:
 
-- `prefer-auto` displays a safe clang-tidy `modernize-use-auto` replacement
-  over an explicit local-variable type.
+- `prefer-auto` displays a safe `auto` spelling over an explicit local-variable
+  type. Its default level uses clang-tidy `modernize-use-auto`; an opt-in level
+  also accepts simple same-type copies proven by clangd's structured AST.
 - `show-deduced-types` displays clangd's inferred type over the source `auto`
   spelling.
 
@@ -80,6 +81,7 @@ AutoVeil is opt-in. Open a supported C++ file and run:
 ```vim
 :AutoVeilEnable
 :AutoVeilMode prefer-auto
+:AutoVeilPreferAutoLevel same-type-copies
 :AutoVeilMode show-deduced-types
 :AutoVeilRefresh
 :AutoVeilReveal
@@ -108,10 +110,34 @@ let g:autoveil_reveal_on_insert = v:true
 let g:autoveil_reveal_under_cursor = v:true
 let g:autoveil_max_visible_lines = 300
 let g:autoveil_type_name_limit = 80
+let g:autoveil_prefer_auto_level = 'conservative'
+let g:autoveil_max_ast_requests = 40
 ```
 
 `g:autoveil_type_name_limit` is fail-closed: a longer clangd label is skipped,
 not cut into a potentially misleading C++ type.
+
+`g:autoveil_prefer_auto_level` selects one of two policies:
+
+- `conservative` (default) renders only direct clang-tidy
+  `modernize-use-auto` code actions.
+- `same-type-copies` includes the conservative results and additionally
+  requests clangd AST nodes for simple local `Type copy = original;`
+  declarations. It renders only when clangd reports a plain variable, the
+  exact type range, and an initializer whose only implicit operation is
+  `LValueToRValue`.
+
+For example, the stronger level can display both declarations as `auto`:
+
+```cpp
+State c = a;
+Transition d = b;
+```
+
+Use `:AutoVeilPreferAutoLevel conservative` or
+`:AutoVeilPreferAutoLevel same-type-copies` to switch at runtime. The latter
+uses at most `g:autoveil_max_ast_requests` AST requests per refresh; zero
+disables its additional candidates while preserving clang-tidy results.
 
 ## Troubleshooting
 
@@ -123,6 +149,9 @@ Start with `:AutoVeilStatus`.
 - `does not advertise code actions`: update/configure clangd and vim-lsp.
 - `does not advertise inlay hints`: use a current clangd with standard
   `inlayHintProvider` support.
+- `does not advertise AST support`: `same-type-copies` needs a clangd version
+  that advertises its `astProvider` protocol extension; use `conservative` if
+  the installed server lacks it.
 - `0 substitutions`: inspect clangd diagnostics, `.clangd`, the compilation
   database, and the conservative limitations below. This is not an error.
 - duplicated inlay hints: disable vim-lsp's renderer with
@@ -139,8 +168,12 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
 
 - Only the listed C/C++ header/source extensions and simple initialized local
   variables are targeted.
-- `prefer-auto` accepts direct, single-edit `WorkspaceEdit` code actions only.
-  Command-backed or multi-file fixes are ignored.
+- Conservative `prefer-auto` accepts direct, single-edit `WorkspaceEdit` code
+  actions only. Command-backed or multi-file fixes are ignored.
+- `same-type-copies` intentionally recognizes only one-line, single-declarator
+  `Type target = source;` locals without cv/ref/pointer spelling. Qualifiers,
+  references, calls, constructors, casts, conversions, macros, and ambiguous
+  AST shapes are skipped.
 - `show-deduced-types` currently accepts simple `auto name = ...`
   declarations. Direct-list initialization, function returns, parameters,
   fields, aliases, structured bindings, macros, and ambiguous declarations are
@@ -153,7 +186,7 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
 
 ## Public API
 
-The supported user API is the `:AutoVeil...` command family, the seven
+The supported user API is the `:AutoVeil...` command family, the nine
 `g:autoveil_...` configuration variables above, and the `AutoVeilAuto` and
 `AutoVeilDeducedType` highlight groups. The `b:autoveil_state` dictionary and
 autoload module exports are implementation details and may change. Version 1

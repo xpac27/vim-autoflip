@@ -1,5 +1,18 @@
 # Features
 
+## 2026-08-28 20:29 CEST - Configurable prefer-auto authority
+
+- `prefer-auto` now has a conservative default and an opt-in
+  `same-type-copies` level.
+- The stronger level preserves all clang-tidy results and adds cv/ref/pointer-
+  free local `Type target = source;` copies only when clangd's structured AST proves
+  the initializer is a direct reference with only an `LValueToRValue`
+  conversion.
+- `:AutoVeilPreferAutoLevel` switches the policy at runtime.
+- `g:autoveil_max_ast_requests` bounds the additional visible-range requests.
+- Missing capabilities, malformed AST replies, conversions, and ambiguous
+  syntax fail closed without changing source.
+
 ## 2026-08-28 19:41 CEST - Stable cursor reveal
 
 - A source type under the cursor remains revealed until the cursor leaves its

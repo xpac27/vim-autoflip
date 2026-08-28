@@ -17,8 +17,9 @@ INTRODUCTION                                             *autoveil-introduction*
 AutoVeil displays two visual-only C++ type transformations:
 
   prefer-auto
-      Conceal an explicit local-variable type and display the replacement from
-      a clang-tidy modernize-use-auto code action.
+      Conceal an explicit local-variable type. The conservative level displays
+      replacements from clang-tidy modernize-use-auto code actions. An opt-in
+      level also accepts simple same-type copies proven by clangd's AST.
 
   show-deduced-types
       Conceal a simple auto declaration prefix and display the full inferred
@@ -61,6 +62,11 @@ COMMANDS                                                       *autoveil-command
                                                     *:AutoVeilMode*
 :AutoVeilMode {mode}  Select prefer-auto or show-deduced-types and refresh.
 
+                                            *:AutoVeilPreferAutoLevel*
+:AutoVeilPreferAutoLevel {level}
+                      Select conservative or same-type-copies and refresh the
+                      current prefer-auto buffer.
+
                                                     *:AutoVeilRefresh*
 :AutoVeilRefresh      Force a new visible-range request.
 
@@ -95,6 +101,18 @@ g:autoveil_max_visible_lines   Number. Default: 300.
                                            *g:autoveil_type_name_limit*
 g:autoveil_type_name_limit     Number. Default: 80. Longer types are skipped.
 
+                                  *g:autoveil_prefer_auto_level*
+g:autoveil_prefer_auto_level   String. Default: "conservative".
+                      "conservative" uses only modernize-use-auto actions.
+                      "same-type-copies" adds clangd AST-proven declarations
+                      shaped as a local Type target = source without cv/ref or
+                      pointer spelling.
+
+                                    *g:autoveil_max_ast_requests*
+g:autoveil_max_ast_requests    Number. Default: 40. Maximum additional AST
+                      requests per visible refresh. Zero disables copy
+                      candidates without disabling clang-tidy actions.
+
 No mappings are installed.
 
 The public API consists of these commands, configuration variables, and the
@@ -119,6 +137,14 @@ until the cursor or active window leaves that range. |:AutoVeilReveal| remains
 timed. Reveal is buffer-wide because Vim virtual text properties are
 buffer-owned; conceal matches and saved options are still window-owned.
 
+At the same-type-copies level, a light lexical scan only discovers possible
+one-line copy declarations. It has no semantic authority. Each candidate is
+sent through vim-lsp to clangd's textDocument/ast extension. AutoVeil requires
+an exact Var declaration/type range and an initializer consisting solely of an
+LValueToRValue ImplicitCast over a DeclRef. Every other shape is skipped. Both
+this result and normal clang-tidy actions pass through TypeView validation and
+rendering without changing the buffer.
+
 ===============================================================================
 TROUBLESHOOTING                                         *autoveil-troubleshooting*
 
@@ -131,14 +157,24 @@ Ensure compile_commands.json is accurate. AutoVeil never manufactures flags.
 Set g:lsp_log_file and g:lsp_log_verbose to inspect vim-lsp traffic. Keep
 g:lsp_inlay_hints_enabled at 0 if duplicated hints appear.
 
+The same-type-copies level requires clangd to advertise astProvider. Select
+the conservative level when using an older or incompatible server.
+
 ===============================================================================
 LIMITATIONS                                                 *autoveil-limitations*
 
-Only direct one-edit modernize-use-auto WorkspaceEdits and simple initialized
-local auto declarations are supported. Command actions, multi-file edits,
-fields, aliases, function returns, parameters, structured bindings, macros,
-direct-list initialization, incomplete declarations, and ambiguous spellings
-are skipped. Overlong inferred labels are skipped rather than truncated.
+Conservative prefer-auto supports only direct one-edit modernize-use-auto
+WorkspaceEdits. same-type-copies additionally supports one-line,
+single-declarator Type target = source locals without cv/ref/pointer spelling
+when clangd's AST proves no conversion beyond LValueToRValue. Qualifiers,
+pointers, references, calls,
+constructors, casts, conversions, and ambiguous AST nodes are skipped.
+
+show-deduced-types supports simple initialized local auto declarations.
+Command actions, multi-file edits, fields, aliases, function returns,
+parameters, structured bindings, macros, direct-list initialization,
+incomplete declarations, and ambiguous spellings are skipped. Overlong
+inferred labels are skipped rather than truncated.
 
 AutoVeil targets Vim only, not Neovim, Coc, or other LSP clients.
 
