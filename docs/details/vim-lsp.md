@@ -13,7 +13,7 @@ when replies arrive out of order. Transport failures become skipped malformed
 reply counts. Core then applies its normal generation, changedtick, mode, and
 policy checks to the combined response.
 
-This is a documented clangd protocol extension, not standard LSP. AutoVeil
+This is a documented clangd protocol extension, not standard LSP. AutoFlip
 checks the advertised capability and validates only structured `role`, `kind`,
 `detail`, `range`, and `children` fields. It does not inspect the optional
 human-oriented `arcana` field. No request changes the server document.
@@ -38,7 +38,7 @@ autoload functions without private/internal prefixes:
 
 Requests include `bufnr`, protocol params, and an `on_notification` callback.
 The callback reads the unmodified `response.result`; no vim-lsp rendered hint
-text is inspected. AutoVeil never calls workspace edit application functions.
+text is inspected. AutoFlip never calls workspace edit application functions.
 
 The adapter requests code actions with `context.only = ['quickfix']` and only
 cached `modernize-use-auto` diagnostics inside the visible request range. Even

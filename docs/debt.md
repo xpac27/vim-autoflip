@@ -1,5 +1,17 @@
 # Technical debt and intentional limitations
 
+## 2026-08-28 21:05 CEST - Breaking product namespace
+
+Impact: existing user configuration and mappings must use the `autoflip` and
+`AutoFlip` namespaces after upgrading. An earlier copied installation must be
+removed so Vim does not load a stale plugin file outside this repository.
+
+Reason: compatibility aliases would retain two public identities and risk
+duplicate commands, autocommands, state variables, help tags, and properties.
+
+Risk: upgrades require a one-time configuration/path migration and Vim
+restart. The README and help state the exact current namespaces.
+
 ## 2026-08-28 20:55 CEST - Selected type remains buffer-scoped
 
 Impact: cursor reveal now exposes only the selected type, but that one source
@@ -32,7 +44,7 @@ mode remains available.
 
 Impact: only one-line `Type target = source;` locals without cv/ref/pointer
 spelling are discovered. Each declaration costs one additional AST request, capped by
-`g:autoveil_max_ast_requests` per refresh.
+`g:autoflip_max_ast_requests` per refresh.
 
 Reason: this is the smallest shape that handles the reported enum copies while
 allowing structured proof that no type-changing conversion occurs.
@@ -60,7 +72,7 @@ TypeView. The cross-split limitation remains only for that one type.
 
 ## 2026-08-28 18:06 CEST - Buffer-wide reveal
 
-Impact: revealing source in one split also removes AutoVeil's virtual text from
+Impact: revealing source in one split also removes AutoFlip's virtual text from
 other splits showing the same buffer for the duration of that reveal.
 
 Reason: Vim virtual text properties are buffer-scoped, with no public
@@ -87,11 +99,11 @@ actions cannot drive `prefer-auto`.
 
 Reason: resolving/executing a command can mutate state and is outside the safe
 read-only contract. A future public vim-lsp resolve API could be inspected, but
-AutoVeil must still never execute or apply the action.
+AutoFlip must still never execute or apply the action.
 
 ## 2026-08-28 18:06 CEST - Long inferred types are skipped
 
-Impact: types beyond `g:autoveil_type_name_limit` remain as source `auto`.
+Impact: types beyond `g:autoflip_type_name_limit` remain as source `auto`.
 
 Reason: arbitrary truncation could hide semantically important suffixes. Safe
 structured truncation is future work.

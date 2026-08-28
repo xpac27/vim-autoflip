@@ -1,5 +1,16 @@
 # Architecture
 
+## 2026-08-28 21:05 CEST - Product namespace
+
+The package identity is `vim-autoflip`. Runtime entry points are
+`plugin/autoflip.vim`, `autoload/autoflip.vim`, and the
+`autoload/autoflip/` module tree. Public Vim commands and highlights use
+`AutoFlip`; script/global/property/buffer identifiers use `autoflip`.
+
+No compatibility layer is loaded. This keeps one command set, one augroup, one
+state dictionary, and one family of text-property types, preventing duplicate
+autocommands or rendering when upgrading.
+
 ## 2026-08-28 20:55 CEST - Selective TypeView omission
 
 Reveal state distinguishes a full reveal from a cursor-selected TypeView ID.
@@ -9,7 +20,7 @@ all other views receive their normal virtual text and conceal matches. Moving
 to another view changes the omitted ID, while range or window exit clears it.
 
 Insert mode and the timed reveal command still use full reveal, which clears
-all AutoVeil properties and matches. This keeps their editing semantics
+all AutoFlip properties and matches. This keeps their editing semantics
 unchanged. Since virtual text remains buffer-owned, omission of the selected ID
 is visible in every split of the buffer, but it no longer affects unrelated
 types.
@@ -47,8 +58,8 @@ screen cursor placement while the cursor still occupies a source type.
 
 ## 2026-08-28 18:06 CEST - Initial implementation
 
-AutoVeil is a Vim9script plugin with one external integration boundary:
-`autoload/autoveil/lsp.vim`. It calls public vim-lsp functions and returns raw
+AutoFlip is a Vim9script plugin with one external integration boundary:
+`autoload/autoflip/lsp.vim`. It calls public vim-lsp functions and returns raw
 response payloads. No other subsystem knows vim-lsp's API.
 
 ```text
@@ -72,9 +83,9 @@ actions.vim                   hints.vim
 byte `col`, byte `length`, and display `replacement`. Both validators produce
 the same shape; the renderer has no C++ or LSP knowledge.
 
-Buffer-local `b:autoveil_state` owns enablement, mode, generation,
+Buffer-local `b:autoflip_state` owns enablement, mode, generation,
 `changedtick`, timers, cached views, status/debug messages, reveal state, and a
-window dictionary. Each window entry owns the pre-AutoVeil conceal option
+window dictionary. Each window entry owns the pre-AutoFlip conceal option
 values and its conceal match IDs.
 
 Vim text properties are buffer-owned, while matches/options are window-owned.

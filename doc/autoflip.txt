@@ -1,20 +1,20 @@
-*autoveil.txt*      Display-only clangd-backed C++ type views
+*autoflip.txt*      vim-autoflip: display-only clangd-backed C++ type views
 
 ===============================================================================
-CONTENTS                                                     *autoveil-contents*
+CONTENTS                                                     *autoflip-contents*
 
-  1. Introduction...............................|autoveil-introduction|
-  2. Requirements................................|autoveil-requirements|
-  3. Commands........................................|autoveil-commands|
-  4. Configuration..............................|autoveil-configuration|
-  5. Operation......................................|autoveil-operation|
-  6. Troubleshooting........................|autoveil-troubleshooting|
-  7. Limitations..................................|autoveil-limitations|
+  1. Introduction...............................|autoflip-introduction|
+  2. Requirements................................|autoflip-requirements|
+  3. Commands........................................|autoflip-commands|
+  4. Configuration..............................|autoflip-configuration|
+  5. Operation......................................|autoflip-operation|
+  6. Troubleshooting........................|autoflip-troubleshooting|
+  7. Limitations..................................|autoflip-limitations|
 
 ===============================================================================
-INTRODUCTION                                             *autoveil-introduction*
+INTRODUCTION                                             *autoflip-introduction*
 
-AutoVeil displays two visual-only C++ type transformations:
+AutoFlip displays two visual-only C++ type transformations:
 
   prefer-auto
       Conceal an explicit local-variable type. The conservative level displays
@@ -25,11 +25,13 @@ AutoVeil displays two visual-only C++ type transformations:
       Conceal a simple auto declaration prefix and display the full inferred
       type from a clangd type inlay hint.
 
-AutoVeil never applies a code action or changes buffer text. Editing, undo,
+AutoFlip never applies a code action or changes buffer text. Editing, undo,
 writes, yanks, searches, macros, and Git operate on the original source.
+The package name is vim-autoflip; commands use AutoFlip and configuration uses
+the autoflip namespace. No compatibility aliases are installed.
 
 ===============================================================================
-REQUIREMENTS                                               *autoveil-requirements*
+REQUIREMENTS                                               *autoflip-requirements*
 
 Vim 9.x must have +vim9script, +textprop, +conceal, +channel, and +job.
 vim-lsp is required and must attach a running clangd server. clangd needs an
@@ -44,85 +46,85 @@ For show-deduced-types, enable clangd deduced type hints:
   InlayHints:
     DeducedTypes: Yes
 <
-AutoVeil requests raw hints and does not require vim-lsp's hint renderer.
+AutoFlip requests raw hints and does not require vim-lsp's hint renderer.
 
 ===============================================================================
-COMMANDS                                                       *autoveil-commands*
+COMMANDS                                                       *autoflip-commands*
 
-                                                    *:AutoVeilEnable*
-:AutoVeilEnable       Enable AutoVeil for the current supported buffer.
+                                                    *:AutoFlipEnable*
+:AutoFlipEnable       Enable AutoFlip for the current supported buffer.
 
-                                                    *:AutoVeilDisable*
-:AutoVeilDisable      Clear rendering, stop timers, and restore every tracked
+                                                    *:AutoFlipDisable*
+:AutoFlipDisable      Clear rendering, stop timers, and restore every tracked
                       window's exact conceal options.
 
-                                                    *:AutoVeilToggle*
-:AutoVeilToggle       Toggle the current buffer.
+                                                    *:AutoFlipToggle*
+:AutoFlipToggle       Toggle the current buffer.
 
-                                                    *:AutoVeilMode*
-:AutoVeilMode {mode}  Select prefer-auto or show-deduced-types and refresh.
+                                                    *:AutoFlipMode*
+:AutoFlipMode {mode}  Select prefer-auto or show-deduced-types and refresh.
 
-                                            *:AutoVeilPreferAutoLevel*
-:AutoVeilPreferAutoLevel {level}
+                                            *:AutoFlipPreferAutoLevel*
+:AutoFlipPreferAutoLevel {level}
                       Select conservative or same-type-copies and refresh the
                       current prefer-auto buffer.
 
-                                                    *:AutoVeilRefresh*
-:AutoVeilRefresh      Force a new visible-range request.
+                                                    *:AutoFlipRefresh*
+:AutoFlipRefresh      Force a new visible-range request.
 
-                                                    *:AutoVeilReveal*
-:AutoVeilReveal       Temporarily reveal original source spellings.
+                                                    *:AutoFlipReveal*
+:AutoFlipReveal       Temporarily reveal original source spellings.
 
-                                                    *:AutoVeilStatus*
-:AutoVeilStatus       Show readiness, mode, generations, cache size, tracked
+                                                    *:AutoFlipStatus*
+:AutoFlipStatus       Show readiness, mode, generations, cache size, tracked
                       windows, and discarded stale response count.
 
 ===============================================================================
-CONFIGURATION                                             *autoveil-configuration*
+CONFIGURATION                                             *autoflip-configuration*
 
-                                          *g:autoveil_enabled_by_default*
-g:autoveil_enabled_by_default  Boolean. Default: false.
+                                          *g:autoflip_enabled_by_default*
+g:autoflip_enabled_by_default  Boolean. Default: false.
 
-                                                     *g:autoveil_mode*
-g:autoveil_mode                String. Default: "prefer-auto".
+                                                     *g:autoflip_mode*
+g:autoflip_mode                String. Default: "prefer-auto".
 
-                                              *g:autoveil_debounce_ms*
-g:autoveil_debounce_ms         Number. Default: 300.
+                                              *g:autoflip_debounce_ms*
+g:autoflip_debounce_ms         Number. Default: 300.
 
-                                         *g:autoveil_reveal_on_insert*
-g:autoveil_reveal_on_insert    Boolean. Default: true.
+                                         *g:autoflip_reveal_on_insert*
+g:autoflip_reveal_on_insert    Boolean. Default: true.
 
-                                    *g:autoveil_reveal_under_cursor*
-g:autoveil_reveal_under_cursor Boolean. Default: true.
+                                    *g:autoflip_reveal_under_cursor*
+g:autoflip_reveal_under_cursor Boolean. Default: true.
 
-                                        *g:autoveil_max_visible_lines*
-g:autoveil_max_visible_lines   Number. Default: 300.
+                                        *g:autoflip_max_visible_lines*
+g:autoflip_max_visible_lines   Number. Default: 300.
 
-                                           *g:autoveil_type_name_limit*
-g:autoveil_type_name_limit     Number. Default: 80. Longer types are skipped.
+                                           *g:autoflip_type_name_limit*
+g:autoflip_type_name_limit     Number. Default: 80. Longer types are skipped.
 
-                                  *g:autoveil_prefer_auto_level*
-g:autoveil_prefer_auto_level   String. Default: "conservative".
+                                  *g:autoflip_prefer_auto_level*
+g:autoflip_prefer_auto_level   String. Default: "conservative".
                       "conservative" uses only modernize-use-auto actions.
                       "same-type-copies" adds clangd AST-proven declarations
                       shaped as a local Type target = source without cv/ref or
                       pointer spelling.
 
-                                    *g:autoveil_max_ast_requests*
-g:autoveil_max_ast_requests    Number. Default: 40. Maximum additional AST
+                                    *g:autoflip_max_ast_requests*
+g:autoflip_max_ast_requests    Number. Default: 40. Maximum additional AST
                       requests per visible refresh. Zero disables copy
                       candidates without disabling clang-tidy actions.
 
 No mappings are installed.
 
 The public API consists of these commands, configuration variables, and the
-AutoVeilAuto and AutoVeilDeducedType highlight groups. b:autoveil_state and
+AutoFlipAuto and AutoFlipDeducedType highlight groups. b:autoflip_state and
 autoload functions are internal. Version 1 emits no User autocommands.
 
 ===============================================================================
-OPERATION                                                     *autoveil-operation*
+OPERATION                                                     *autoflip-operation*
 
-AutoVeil requests the visible lines plus a five-line margin. Edits increment a
+AutoFlip requests the visible lines plus a five-line margin. Edits increment a
 buffer generation and start a debounce timer. A reply is accepted only when
 the buffer still exists, remains enabled in the same mode, and both generation
 and changedtick still match.
@@ -134,28 +136,28 @@ the source. Window-local conceallevel and concealcursor are restored exactly.
 InsertEnter reveals source. InsertLeave schedules a fresh request. CursorMoved
 reveals when the cursor reaches a rendered source range and keeps it revealed
 until the cursor or active window leaves that range. Every other TypeView stays
-rendered. |:AutoVeilReveal| remains timed and reveals all types, as does insert
+rendered. |:AutoFlipReveal| remains timed and reveals all types, as does insert
 mode. A cursor-selected type is revealed in every split showing the buffer
 because Vim virtual text properties are buffer-owned; unrelated types remain
 concealed, and conceal matches and saved options are still window-owned.
 
 At the same-type-copies level, a light lexical scan only discovers possible
 one-line copy declarations. It has no semantic authority. Each candidate is
-sent through vim-lsp to clangd's textDocument/ast extension. AutoVeil requires
+sent through vim-lsp to clangd's textDocument/ast extension. AutoFlip requires
 an exact Var declaration/type range and an initializer consisting solely of an
 LValueToRValue ImplicitCast over a DeclRef. Every other shape is skipped. Both
 this result and normal clang-tidy actions pass through TypeView validation and
 rendering without changing the buffer.
 
 ===============================================================================
-TROUBLESHOOTING                                         *autoveil-troubleshooting*
+TROUBLESHOOTING                                         *autoflip-troubleshooting*
 
-Use |:AutoVeilStatus| first. A waiting status names the missing dependency,
+Use |:AutoFlipStatus| first. A waiting status names the missing dependency,
 clangd attachment, or capability. Zero substitutions usually means clangd did
 not produce an authoritative candidate or the conservative validator rejected
 an ambiguous shape.
 
-Ensure compile_commands.json is accurate. AutoVeil never manufactures flags.
+Ensure compile_commands.json is accurate. AutoFlip never manufactures flags.
 Set g:lsp_log_file and g:lsp_log_verbose to inspect vim-lsp traffic. Keep
 g:lsp_inlay_hints_enabled at 0 if duplicated hints appear.
 
@@ -163,7 +165,7 @@ The same-type-copies level requires clangd to advertise astProvider. Select
 the conservative level when using an older or incompatible server.
 
 ===============================================================================
-LIMITATIONS                                                 *autoveil-limitations*
+LIMITATIONS                                                 *autoflip-limitations*
 
 Conservative prefer-auto supports only direct one-edit modernize-use-auto
 WorkspaceEdits. same-type-copies additionally supports one-line,
@@ -178,6 +180,6 @@ parameters, structured bindings, macros, direct-list initialization,
 incomplete declarations, and ambiguous spellings are skipped. Overlong
 inferred labels are skipped rather than truncated.
 
-AutoVeil targets Vim only, not Neovim, Coc, or other LSP clients.
+AutoFlip targets Vim only, not Neovim, Coc, or other LSP clients.
 
 vim:tw=78:ts=8:noet:ft=help:norl:

@@ -1,6 +1,6 @@
-# AutoVeil
+# vim-autoflip
 
-AutoVeil is a display-only C++ type viewer for current Vim 9.x. It has two
+AutoFlip is a display-only C++ type viewer for current Vim 9.x. It has two
 modes:
 
 - `prefer-auto` displays a safe `auto` spelling over an explicit local-variable
@@ -9,9 +9,15 @@ modes:
 - `show-deduced-types` displays clangd's inferred type over the source `auto`
   spelling.
 
-AutoVeil never applies an edit. The buffer, undo history, saved file, search,
+AutoFlip never applies an edit. The buffer, undo history, saved file, search,
 yanks, macros, navigation, and Git diff continue to use the original source.
 Only Vim conceal matches and virtual text change what a window displays.
+
+The package/repository name is `vim-autoflip`; its Vim command and display
+prefix is `AutoFlip`, and its Vim9script/global namespace is `autoflip`. This
+is a deliberate breaking identity with no compatibility aliases. Remove an
+earlier installed copy, update the plugin-manager path and configuration names,
+restart Vim, and regenerate help tags after upgrading.
 
 ## Requirements
 
@@ -29,11 +35,11 @@ deduction are intentionally unsupported.
 
 ## Installation
 
-With vim-plug, load vim-lsp before AutoVeil:
+With vim-plug, load vim-lsp before AutoFlip:
 
 ```vim
 Plug 'prabirshrestha/vim-lsp'
-Plug '/absolute/path/to/vim-autoauto'
+Plug '/absolute/path/to/vim-autoflip'
 ```
 
 Or copy/clone this repository below a Vim package `start` directory. Run
@@ -52,7 +58,7 @@ endif
 ```
 
 `vim-lsp-settings` may register clangd instead. Keep `clangd` in the registered
-server name so AutoVeil can conservatively identify it. AutoVeil makes its own
+server name so AutoFlip can conservatively identify it. AutoFlip makes its own
 raw inlay-hint request; vim-lsp's renderer can remain disabled (its default):
 
 ```vim
@@ -71,32 +77,32 @@ InlayHints:
 ```
 
 Some clangd installations enable clang-tidy without the launch flag; using
-`--clang-tidy` explicitly is the clearest known-good setup. AutoVeil does not
+`--clang-tidy` explicitly is the clearest known-good setup. AutoFlip does not
 invent compiler flags. Fix compilation database problems in the project.
 
 ## Usage
 
-AutoVeil is opt-in. Open a supported C++ file and run:
+AutoFlip is opt-in. Open a supported C++ file and run:
 
 ```vim
-:AutoVeilEnable
-:AutoVeilMode prefer-auto
-:AutoVeilPreferAutoLevel same-type-copies
-:AutoVeilMode show-deduced-types
-:AutoVeilRefresh
-:AutoVeilReveal
-:AutoVeilStatus
-:AutoVeilDisable
+:AutoFlipEnable
+:AutoFlipMode prefer-auto
+:AutoFlipPreferAutoLevel same-type-copies
+:AutoFlipMode show-deduced-types
+:AutoFlipRefresh
+:AutoFlipReveal
+:AutoFlipStatus
+:AutoFlipDisable
 ```
 
-`:AutoVeilToggle` switches the current buffer on or off. Insert mode reveals
+`:AutoFlipToggle` switches the current buffer on or off. Insert mode reveals
 the original spelling by default. Moving onto a concealed type keeps its
 original spelling visible until the cursor leaves that source range; every
 other substitution remains concealed. No mappings are installed; an optional
 user mapping is:
 
 ```vim
-nnoremap <leader>av <Cmd>AutoVeilToggle<CR>
+nnoremap <leader>av <Cmd>AutoFlipToggle<CR>
 ```
 
 ## Configuration
@@ -104,21 +110,21 @@ nnoremap <leader>av <Cmd>AutoVeilToggle<CR>
 Set globals before the plugin loads:
 
 ```vim
-let g:autoveil_enabled_by_default = v:false
-let g:autoveil_mode = 'prefer-auto'
-let g:autoveil_debounce_ms = 300
-let g:autoveil_reveal_on_insert = v:true
-let g:autoveil_reveal_under_cursor = v:true
-let g:autoveil_max_visible_lines = 300
-let g:autoveil_type_name_limit = 80
-let g:autoveil_prefer_auto_level = 'conservative'
-let g:autoveil_max_ast_requests = 40
+let g:autoflip_enabled_by_default = v:false
+let g:autoflip_mode = 'prefer-auto'
+let g:autoflip_debounce_ms = 300
+let g:autoflip_reveal_on_insert = v:true
+let g:autoflip_reveal_under_cursor = v:true
+let g:autoflip_max_visible_lines = 300
+let g:autoflip_type_name_limit = 80
+let g:autoflip_prefer_auto_level = 'conservative'
+let g:autoflip_max_ast_requests = 40
 ```
 
-`g:autoveil_type_name_limit` is fail-closed: a longer clangd label is skipped,
+`g:autoflip_type_name_limit` is fail-closed: a longer clangd label is skipped,
 not cut into a potentially misleading C++ type.
 
-`g:autoveil_prefer_auto_level` selects one of two policies:
+`g:autoflip_prefer_auto_level` selects one of two policies:
 
 - `conservative` (default) renders only direct clang-tidy
   `modernize-use-auto` code actions.
@@ -135,16 +141,16 @@ State c = a;
 Transition d = b;
 ```
 
-Use `:AutoVeilPreferAutoLevel conservative` or
-`:AutoVeilPreferAutoLevel same-type-copies` to switch at runtime. The latter
-uses at most `g:autoveil_max_ast_requests` AST requests per refresh; zero
+Use `:AutoFlipPreferAutoLevel conservative` or
+`:AutoFlipPreferAutoLevel same-type-copies` to switch at runtime. The latter
+uses at most `g:autoflip_max_ast_requests` AST requests per refresh; zero
 disables its additional candidates while preserving clang-tidy results.
 
 ## Troubleshooting
 
-Start with `:AutoVeilStatus`.
+Start with `:AutoFlipStatus`.
 
-- `vim-lsp is not installed`: install/load vim-lsp before AutoVeil.
+- `vim-lsp is not installed`: install/load vim-lsp before AutoFlip.
 - `no running clangd server is attached`: check vim-lsp registration and
   `:LspStatus`/`:CheckHealth` if available.
 - `does not advertise code actions`: update/configure clangd and vim-lsp.
@@ -184,18 +190,18 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
   buffer-owned. Insert and explicit command reveal intentionally expose all
   types. Conceal matches and option restoration remain independently tracked
   for each window.
-- AutoVeil recognizes an attached server whose vim-lsp name or info name
+- AutoFlip recognizes an attached server whose vim-lsp name or info name
   contains `clangd`.
 
 ## Public API
 
-The supported user API is the `:AutoVeil...` command family, the nine
-`g:autoveil_...` configuration variables above, and the `AutoVeilAuto` and
-`AutoVeilDeducedType` highlight groups. The `b:autoveil_state` dictionary and
+The supported user API is the `:AutoFlip...` command family, the nine
+`g:autoflip_...` configuration variables above, and the `AutoFlipAuto` and
+`AutoFlipDeducedType` highlight groups. The `b:autoflip_state` dictionary and
 autoload module exports are implementation details and may change. Version 1
 does not emit User autocommands or install mappings.
 
-See `:help autoveil`, [features](docs/features.md), and
+See `:help autoflip`, [features](docs/features.md), and
 [architecture](docs/architecture.md) for the complete behavior.
 
 ## Development

@@ -3,7 +3,7 @@
 ## 2026-08-28 20:55 CEST - Selective cursor omission
 
 Normal rendering begins from the complete cached TypeView list. It clears only
-AutoVeil-owned properties and tracked matches, then adds one virtual-text
+AutoFlip-owned properties and tracked matches, then adds one virtual-text
 property and one conceal match per rendered view.
 
 Cursor reveal stores one stable TypeView ID in buffer state. The same render
@@ -13,7 +13,7 @@ between views changes the omitted ID in one render pass; leaving all view
 ranges or the active window clears the ID and restores complete rendering.
 
 Insert and explicit timed reveal set full-reveal state instead. The renderer
-then leaves all AutoVeil properties and matches cleared until insert exit or
+then leaves all AutoFlip properties and matches cleared until insert exit or
 timer expiry.
 
 Vim properties are buffer-owned and conceal matches are window-owned. Selective

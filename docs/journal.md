@@ -1,9 +1,24 @@
 # Engineering journal
 
+## 2026-08-28 21:05 CEST - Complete vim-autoflip rename
+
+- Inventoried runtime paths, public commands, globals, buffer state,
+  properties, highlights, augroups, fake-LSP hooks, environment variables,
+  fixtures, help tags, documentation, and plan paths before changing names.
+- Renamed the runtime to `plugin/autoflip.vim` and
+  `autoload/autoflip/`, with the public `AutoFlip` command/highlight prefix and
+  `autoflip` internal/configuration namespace.
+- Renamed the help file and implementation plan, updated installation and test
+  surfaces, and added a deterministic public-identity contract.
+- Chose a clean breaking rename without compatibility aliases to prevent two
+  plugin entry points, duplicated autocommands, or mixed buffer state.
+- Audited tracked content and filenames for superseded product identifiers;
+  the audit returned zero matches.
+
 ## 2026-08-28 20:55 CEST - Make cursor reveal selective
 
 - Reproduced that cursor reveal called the full `render.Reveal()` path, which
-  cleared every AutoVeil property and conceal match in the buffer.
+  cleared every AutoFlip property and conceal match in the buffer.
 - Added a stable selected-TypeView ID to buffer state. Normal rendering now
   omits only that view while rebuilding every unrelated property and match.
 - Kept insert and explicit command reveal on the existing full-reveal path.

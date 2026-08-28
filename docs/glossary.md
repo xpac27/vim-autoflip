@@ -1,10 +1,18 @@
 # Glossary
 
+## 2026-08-28 21:05 CEST - Product identity
+
+- **vim-autoflip**: package, repository, implementation-plan, and installation
+  directory name.
+- **AutoFlip**: user-facing command, status, and highlight-group prefix.
+- **autoflip**: Vim9script module, global, buffer-state, property, augroup,
+  integration-test, and environment-variable namespace.
+
 ## 2026-08-28 20:55 CEST - Selective reveal
 
 - **selected TypeView ID**: the one cached substitution omitted from rendering
   while the cursor occupies its source range.
-- **full reveal**: removal of every AutoVeil property and conceal match for
+- **full reveal**: removal of every AutoFlip property and conceal match for
   insert mode or the timed reveal command.
 
 ## 2026-08-28 20:29 CEST - Prefer-auto levels
@@ -21,12 +29,12 @@
 - **cursor-pinned reveal**: selective omission that persists while the active
   cursor is inside one TypeView's complete source range and ends on range or
   window exit.
-- **timed reveal**: the temporary reveal started by `:AutoVeilReveal` and ended
+- **timed reveal**: the temporary reveal started by `:AutoFlipReveal` and ended
   by its configured debounce timer.
 
 ## 2026-08-28 18:06 CEST - Canonical terms
 
-- **AutoVeil**: this plugin and command prefix.
+- **AutoFlip**: this plugin and command prefix.
 - **prefer-auto**: display mode that shows an authoritative safe `auto`
   spelling over an explicit type.
 - **show-deduced-types**: display mode that shows clangd's inferred full type

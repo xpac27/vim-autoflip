@@ -1,5 +1,21 @@
 # Architecture decisions
 
+## 2026-08-28 21:05 CEST - Use one AutoFlip identity without aliases
+
+Reason:
+
+- one runtime entry point prevents duplicate autocmd groups and rendering;
+- one global/buffer namespace keeps configuration and lifecycle ownership
+  unambiguous;
+- a mechanical full-tree rename is testable with exact zero-match audits.
+
+Rejected:
+
+- retain compatibility commands or globals: preserves the superseded public
+  surface and complicates precedence;
+- load a forwarding plugin file: risks both entry points being sourced by Vim;
+- rename only commands/documentation: leaves misleading module and state names.
+
 ## 2026-08-28 20:55 CEST - Omit one TypeView for cursor reveal
 
 Reason:

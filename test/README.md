@@ -1,5 +1,13 @@
 # Tests
 
+## 2026-08-28 21:05 CEST - AutoFlip identity coverage
+
+`test/test_identity.vim` asserts all eight `AutoFlip` commands, nine
+`g:autoflip_*` configuration variables, both highlight groups, both property
+names, the load guard, and the status prefix. Compile and integration runners
+load only `plugin/autoflip.vim`; the optional integration uses
+`AUTOFLIP_VIM_LSP` and `AUTOFLIP_TEST_ROOT`.
+
 ## 2026-08-28 20:55 CEST - Selective reveal coverage
 
 Lifecycle tests render multiple TypeViews and verify that cursor entry removes
@@ -35,4 +43,4 @@ configuration or installed plugin is loaded.
 
 `test/integration_clangd.vim` is optional. It exits successfully with a clear
 skip message unless both `clangd` and an external vim-lsp checkout supplied in
-`AUTOVEIL_VIM_LSP` are available. Run it through `test/run-integration.sh`.
+`AUTOFLIP_VIM_LSP` are available. Run it through `test/run-integration.sh`.

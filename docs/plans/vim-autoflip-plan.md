@@ -1,4 +1,17 @@
-# `vim-autoauto`: Implementation Plan
+# `vim-autoflip`: Implementation Plan
+
+## Implemented product rename (2026-08-28 21:05 CEST)
+
+The product identity is `vim-autoflip`. Vim commands and highlight groups use
+the `AutoFlip` prefix, while globals, buffer state, properties, augroups,
+autoload paths, test hooks, and integration environment variables use the
+`autoflip` namespace. The runtime/help/plan filenames follow the package name.
+
+The rename is deliberately breaking and provides no compatibility aliases or
+forwarding runtime, avoiding duplicate plugin loading and mixed lifecycle
+state. Tests include an explicit public-identity contract, and release checks
+require a zero-match audit for superseded identifiers in tracked files and
+paths.
 
 ## Goal
 
@@ -130,7 +143,7 @@ contract and avoids showing a misleading duplicate type.
 Cursor reveal now records the stable ID of the TypeView containing the cursor
 and rebuilds rendering with only that view omitted. Other types retain both
 their virtual replacement and conceal match. Insert mode and
-`:AutoVeilReveal` intentionally retain full reveal. Because the selected
+`:AutoFlipReveal` intentionally retain full reveal. Because the selected
 virtual-text property is buffer-owned, its source spelling appears in every
 split showing the buffer, but unrelated types remain concealed in every split.
 
@@ -140,17 +153,17 @@ The short timer must not restore concealment while the cursor remains inside a
 rendered source range: Vim then redraws against the shorter replacement and
 the visible cursor position jumps. Cursor-triggered reveal therefore remains
 pinned until `CursorMoved` leaves the complete source range or `WinLeave`
-deactivates the window. The explicit `:AutoVeilReveal` command remains timed by
-`g:autoveil_debounce_ms`.
+deactivates the window. The explicit `:AutoFlipReveal` command remains timed by
+`g:autoflip_debounce_ms`.
 
 - On `InsertEnter`, temporarily reveal all original types in that window.
 - On `InsertLeave`, refresh and conceal again after a short debounce.
 - On `CursorMoved`, reveal the declaration currently under the cursor for a
-  configurable short time, or provide it in `:AutoVeilReveal` initially if
+  configurable short time, or provide it in `:AutoFlipReveal` initially if
   automatic reveal is visually distracting.
-- Highlight virtual `auto` with a dedicated `AutoVeilAuto` group linked by
+- Highlight virtual `auto` with a dedicated `AutoFlipAuto` group linked by
   default to `Type` and subtly distinguish it as a display transformation.
-- Highlight inferred explicit types with a distinct `AutoVeilDeducedType` group
+- Highlight inferred explicit types with a distinct `AutoFlipDeducedType` group
   linked by default to `Type`.
 - Selection, yanking, searching, macros, LSP navigation, and writes must keep
   operating on the original buffer text.
@@ -158,15 +171,15 @@ deactivates the window. The explicit `:AutoVeilReveal` command remains timed by
 ## Plugin structure
 
 ```text
-autoload/autoveil.vim             # Small compatibility entry points, if needed
-plugin/autoveil.vim               # Commands, defaults, autocmd group
-autoload/autoveil/core.vim        # Per-buffer state and refresh scheduler
-autoload/autoveil/lsp.vim         # vim-lsp capability/code-action adapter
-autoload/autoveil/actions.vim     # Validate/normalize clang-tidy WorkspaceEdits
-autoload/autoveil/hints.vim       # Validate clangd type inlay hints
-autoload/autoveil/render.vim      # Text properties, matches, conceal options
-autoload/autoveil/types.vim       # TypeView aliases and small data helpers
-doc/autoveil.txt                  # :help documentation
+autoload/autoflip.vim             # Small compatibility entry points, if needed
+plugin/autoflip.vim               # Commands, defaults, autocmd group
+autoload/autoflip/core.vim        # Per-buffer state and refresh scheduler
+autoload/autoflip/lsp.vim         # vim-lsp capability/code-action adapter
+autoload/autoflip/actions.vim     # Validate/normalize clang-tidy WorkspaceEdits
+autoload/autoflip/hints.vim       # Validate clangd type inlay hints
+autoload/autoflip/render.vim      # Text properties, matches, conceal options
+autoload/autoflip/types.vim       # TypeView aliases and small data helpers
+doc/autoflip.txt                  # :help documentation
 test/                              # Vim test scripts and fixtures
 ```
 
@@ -181,7 +194,7 @@ Use a buffer-local state dictionary containing:
 - original window-local conceal options, keyed by window id.
 
 Never leave properties, matches, timers, or changed local options behind after
-`BufWipeout`, `WinClosed`, or `:AutoVeilDisable`.
+`BufWipeout`, `WinClosed`, or `:AutoFlipDisable`.
 
 ## LSP integration
 
@@ -201,7 +214,7 @@ def RequestInlayHints(bufnr: number, range: dict<any>, callback: func): void
 
 Use vim-lsp's public API only. Detect a missing vim-lsp dependency, clangd, or
 required capability cleanly and leave the relevant mode untouched, with
-`:AutoVeilStatus` explaining why.
+`:AutoFlipStatus` explaining why.
 
 ### Request strategy
 
@@ -257,30 +270,30 @@ document edits, or regex-based semantic authority.
 
 Provide these commands:
 
-- `:AutoVeilEnable` — enable for the current buffer.
-- `:AutoVeilDisable` — remove all rendering for the current buffer.
-- `:AutoVeilToggle` — toggle it.
-- `:AutoVeilMode prefer-auto` — display safe `auto` spellings.
-- `:AutoVeilMode show-deduced-types` — display full inferred type spellings.
-- `:AutoVeilPreferAutoLevel {level}` — select conservative or opt-in
+- `:AutoFlipEnable` — enable for the current buffer.
+- `:AutoFlipDisable` — remove all rendering for the current buffer.
+- `:AutoFlipToggle` — toggle it.
+- `:AutoFlipMode prefer-auto` — display safe `auto` spellings.
+- `:AutoFlipMode show-deduced-types` — display full inferred type spellings.
+- `:AutoFlipPreferAutoLevel {level}` — select conservative or opt-in
   same-type-copies authority.
-- `:AutoVeilRefresh` — force a new LSP query for the visible region.
-- `:AutoVeilReveal` — temporarily show real types in the current window.
-- `:AutoVeilStatus` — report prerequisites, LSP attachment, cache generation,
+- `:AutoFlipRefresh` — force a new LSP query for the visible region.
+- `:AutoFlipReveal` — temporarily show real types in the current window.
+- `:AutoFlipStatus` — report prerequisites, LSP attachment, cache generation,
   and number of substitutions.
 
 Initial configuration variables:
 
 ```vim
-g:autoveil_enabled_by_default = false
-g:autoveil_mode = 'prefer-auto'
-g:autoveil_debounce_ms = 300
-g:autoveil_reveal_on_insert = true
-g:autoveil_reveal_under_cursor = true
-g:autoveil_max_visible_lines = 300
-g:autoveil_type_name_limit = 80
-g:autoveil_prefer_auto_level = 'conservative'
-g:autoveil_max_ast_requests = 40
+g:autoflip_enabled_by_default = false
+g:autoflip_mode = 'prefer-auto'
+g:autoflip_debounce_ms = 300
+g:autoflip_reveal_on_insert = true
+g:autoflip_reveal_under_cursor = true
+g:autoflip_max_visible_lines = 300
+g:autoflip_type_name_limit = 80
+g:autoflip_prefer_auto_level = 'conservative'
+g:autoflip_max_ast_requests = 40
 ```
 
 Make the plugin opt-in by default. Do not globally override mappings. If a
@@ -317,7 +330,7 @@ Accept a type hint only when all conditions hold:
 - Replacing the entire prefix preserves visible cv/ref/pointer spelling from the
   type supplied by clangd; never concatenate an inferred type with leftover
   source `*`, `&`, or qualifiers.
-- The rendered type does not exceed `g:autoveil_type_name_limit`; truncate only
+- The rendered type does not exceed `g:autoflip_type_name_limit`; truncate only
   at a clear boundary and append an ellipsis, or skip it if safe truncation is
   not possible.
 - It is not a structured binding, function return, field, alias, macro-expanded
@@ -333,7 +346,7 @@ variables. Expanding syntax support requires new fixtures first.
 1. Create plugin layout, Vim9script conventions, help file, and a minimal
    README.
 2. Implement commands, feature checks, buffer/window state, cleanup, and
-   `:AutoVeilStatus`.
+   `:AutoFlipStatus`.
 3. Implement a renderer test double so lifecycle tests do not require clangd.
 
 ### Phase 2 — Rendering proof of concept

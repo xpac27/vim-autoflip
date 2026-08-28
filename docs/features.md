@@ -1,12 +1,20 @@
 # Features
 
+## 2026-08-28 21:05 CEST - vim-autoflip product identity
+
+- The package and repository identity is `vim-autoflip`.
+- All commands use the `AutoFlip` prefix; globals, buffer state, autoload
+  modules, properties, and the augroup use `autoflip`.
+- Highlight groups are `AutoFlipAuto` and `AutoFlipDeducedType`.
+- The rename is intentionally complete and installs no compatibility aliases.
+
 ## 2026-08-28 20:55 CEST - Selective cursor reveal
 
 - Cursor reveal now omits only the TypeView containing the cursor instead of
   clearing every rendered type in the buffer.
 - Moving directly between source ranges re-conceals the previous type and
   reveals the new one atomically.
-- Insert mode and `:AutoVeilReveal` retain intentional full-buffer reveal.
+- Insert mode and `:AutoFlipReveal` retain intentional full-buffer reveal.
 - Split windows keep every unrelated type concealed; only the selected type is
   exposed across splits because its virtual text is buffer-owned.
 
@@ -18,8 +26,8 @@
   free local `Type target = source;` copies only when clangd's structured AST proves
   the initializer is a direct reference with only an `LValueToRValue`
   conversion.
-- `:AutoVeilPreferAutoLevel` switches the policy at runtime.
-- `g:autoveil_max_ast_requests` bounds the additional visible-range requests.
+- `:AutoFlipPreferAutoLevel` switches the policy at runtime.
+- `g:autoflip_max_ast_requests` bounds the additional visible-range requests.
 - Missing capabilities, malformed AST replies, conversions, and ambiguous
   syntax fail closed without changing source.
 
@@ -48,5 +56,5 @@ Implemented:
 - Commands, configuration, status reporting, help, and deterministic tests.
 
 Limitations are maintained in [debt.md](debt.md) and `:help
-autoveil-limitations`. Unsupported or ambiguous inputs are deliberately left
+autoflip-limitations`. Unsupported or ambiguous inputs are deliberately left
 unchanged on screen.

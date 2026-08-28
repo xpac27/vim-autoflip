@@ -1,11 +1,19 @@
 # Technology
 
+## 2026-08-28 21:05 CEST - Runtime naming contract
+
+- Vim discovers `plugin/autoflip.vim` and Vim9script imports modules below
+  `autoload/autoflip/`.
+- Public commands/highlights use `AutoFlip`; configuration and state use
+  `g:autoflip_*` and `b:autoflip_state`.
+- No compatibility runtime or alias layer is part of the supported stack.
+
 ## 2026-08-28 20:29 CEST - Optional clangd AST extension
 
 - The default prefer-auto path remains clang-tidy `modernize-use-auto`.
 - The opt-in same-type copy path requires clangd's advertised `astProvider`
   capability and `textDocument/ast` extension.
-- All requests still travel through public vim-lsp APIs. AutoVeil does not
+- All requests still travel through public vim-lsp APIs. AutoFlip does not
   start clangd, send document mutations, or invoke standalone Clang tools.
 - Structured AST fields are accepted fail-closed; `arcana` and hover markup are
   never parsed as type authority.
