@@ -16,7 +16,7 @@ function! lsp#is_server_running(server) abort
 endfunction
 
 function! lsp#get_server_capabilities(server) abort
-  return {'codeActionProvider': v:true, 'inlayHintProvider': {}}
+  return {'codeActionProvider': v:true, 'inlayHintProvider': {}, 'astProvider': v:true}
 endfunction
 
 function! lsp#get_text_document_identifier(bufnr) abort

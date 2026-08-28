@@ -2,11 +2,14 @@ vim9script
 
 import autoload 'autoveil/render.vim' as render
 import autoload 'autoveil/actions.vim' as actions
+import autoload 'autoveil/copies.vim' as copies
 import autoload 'autoveil/hints.vim' as hints
 import autoload 'autoveil/lsp.vim' as lsp
 import autoload 'autoveil/range.vim' as rangeutil
+import autoload 'autoveil/types.vim' as types
 
 const MODES = ['prefer-auto', 'show-deduced-types']
+const PREFER_AUTO_LEVELS = ['conservative', 'same-type-copies']
 const CPP_FILETYPES = ['c', 'cpp']
 const CPP_EXTENSIONS = ['cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']
 
@@ -129,10 +132,39 @@ export def SetMode(mode: string)
   endif
 enddef
 
+def PreferAutoLevel(): string
+  return get(g:, 'autoveil_prefer_auto_level', 'conservative')
+enddef
+
+export def SetPreferAutoLevel(level: string)
+  if index(PREFER_AUTO_LEVELS, level) < 0
+    echohl ErrorMsg | echomsg 'AutoVeil: invalid prefer-auto level: ' .. level | echohl None
+    return
+  endif
+  g:autoveil_prefer_auto_level = level
+  var state = State()
+  if state.mode !=# 'prefer-auto'
+    return
+  endif
+  state.views = {}
+  state.revealed = false
+  state.reveal_source = ''
+  state.generation += 1
+  render.Render(bufnr('%'), state, [])
+  if state.enabled
+    Refresh(true)
+  endif
+enddef
+
 export def Refresh(force: bool = false)
   var bufnr = bufnr('%')
   var state = State()
   if !state.enabled
+    return
+  endif
+  var prefer_auto_level = PreferAutoLevel()
+  if state.mode ==# 'prefer-auto' && index(PREFER_AUTO_LEVELS, prefer_auto_level) < 0
+    state.status = 'error: invalid prefer-auto level: ' .. prefer_auto_level
     return
   endif
   StopTimer(state, 'pending_timer')
@@ -159,6 +191,11 @@ export def Refresh(force: bool = false)
     state.status = 'waiting: clangd does not advertise code actions'
     return
   endif
+  if state.mode ==# 'prefer-auto' && prefer_auto_level ==# 'same-type-copies'
+      && !lsp.SupportsAst(bufnr)
+    state.status = 'waiting: clangd does not advertise AST support'
+    return
+  endif
   if state.mode ==# 'show-deduced-types' && !lsp.SupportsInlayHints(bufnr)
     state.status = 'waiting: clangd does not advertise inlay hints'
     return
@@ -171,9 +208,15 @@ export def Refresh(force: bool = false)
   var request_mode = state.mode
   state.status = force ? 'enabled; refresh requested' : 'enabled; request pending'
   var Callback = (response) => HandleReply(bufnr, generation, changedtick,
-    request_mode, requested, response)
+    request_mode, prefer_auto_level, requested, response)
   if request_mode ==# 'prefer-auto'
-    lsp.RequestCodeActions(bufnr, requested, Callback)
+    if prefer_auto_level ==# 'same-type-copies'
+      var candidates = copies.Candidates(bufnr, requested,
+        max([0, get(g:, 'autoveil_max_ast_requests', 40)]))
+      lsp.RequestPreferAuto(bufnr, requested, candidates, Callback)
+    else
+      lsp.RequestCodeActions(bufnr, requested, Callback)
+    endif
   else
     lsp.RequestInlayHints(bufnr, requested, Callback)
   endif
@@ -203,6 +246,7 @@ def HandleReply(
     generation: number,
     changedtick: number,
     request_mode: string,
+    prefer_auto_level: string,
     requested: dict<any>,
     response: any)
   if !bufexists(bufnr)
@@ -213,6 +257,7 @@ def HandleReply(
       || state.changedtick != changedtick
       || getbufvar(bufnr, 'changedtick') != changedtick
       || state.mode !=# request_mode
+      || (request_mode ==# 'prefer-auto' && PreferAutoLevel() !=# prefer_auto_level)
 
     add(state.debug, 'discarded stale ' .. request_mode .. ' response')
     return
@@ -222,8 +267,22 @@ def HandleReply(
     return
   endif
   var fresh: list<dict<any>>
+  var ast_errors = 0
   if request_mode ==# 'prefer-auto'
-    fresh = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(response, 'result', []))
+    if prefer_auto_level ==# 'same-type-copies'
+      var result = get(response, 'result', 0)
+      if type(result) != v:t_dict
+        state.status = 'error: malformed combined prefer-auto response'
+        return
+      endif
+      fresh = MergeViews([
+        actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(result, 'actions', [])),
+        copies.Normalize(bufnr, get(result, 'copies', [])),
+      ])
+      ast_errors = get(result, 'ast_errors', 0)
+    else
+      fresh = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(response, 'result', []))
+    endif
   else
     fresh = hints.Normalize(bufnr, requested, get(response, 'result', []),
       get(g:, 'autoveil_type_name_limit', 80))
@@ -236,8 +295,28 @@ def HandleReply(
   for view in fresh
     state.views[view.id] = view
   endfor
-  state.status = printf('enabled; clangd response accepted (%d substitutions)', len(fresh))
+  state.status = printf('enabled; clangd response accepted (%d substitutions%s)', len(fresh),
+    ast_errors > 0 ? printf('; %d malformed AST replies skipped', ast_errors) : '')
   render.Render(bufnr, state, values(state.views))
+enddef
+
+def MergeViews(groups: list<list<dict<any>>>): list<dict<any>>
+  var by_location: dict<any> = {}
+  var ambiguous: dict<bool> = {}
+  for group in groups
+    for view in group
+      var location = printf('%d:%d:%d', view.lnum, view.col, view.length)
+      if has_key(by_location, location) && by_location[location].replacement !=# view.replacement
+        ambiguous[location] = true
+      else
+        by_location[location] = view
+      endif
+    endfor
+  endfor
+  for location in keys(ambiguous)
+    remove(by_location, location)
+  endfor
+  return types.SortViews(values(by_location))
 enddef
 
 export def Reveal()
@@ -395,8 +474,8 @@ enddef
 
 export def Status(): string
   var state = State()
-  return printf('AutoVeil: %s; mode=%s; generation=%d; changedtick=%d; substitutions=%d; windows=%d; stale=%d',
-    state.status, state.mode, state.generation, state.changedtick, len(state.views), len(state.windows),
+  return printf('AutoVeil: %s; mode=%s; prefer-auto-level=%s; generation=%d; changedtick=%d; substitutions=%d; windows=%d; stale=%d',
+    state.status, state.mode, PreferAutoLevel(), state.generation, state.changedtick, len(state.views), len(state.windows),
     state.debug->filter((_, entry) => entry =~# '^discarded stale')->len())
 enddef
 

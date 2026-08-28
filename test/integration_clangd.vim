@@ -64,12 +64,35 @@ if empty(filter(copy(s:preferred), {_, view -> view.replacement =~# '\<auto\>'})
   call writefile(['FAIL: real clang-tidy replacement did not contain auto'], '/dev/stderr')
   cquit
 endif
+
+AutoVeilPreferAutoLevel same-type-copies
+let s:copy_line = search('IntegrationState copied = state;', 'nw')
+let s:copy_again_line = search('IntegrationState copied_again = copied;', 'nw')
+let s:remaining = 500
+while s:remaining > 0
+  let s:copy_views = filter(values(get(get(b:, 'autoveil_state', {}), 'views', {})),
+        \ {_, view -> (view.lnum == s:copy_line || view.lnum == s:copy_again_line)
+        \   && view.replacement ==# 'auto'})
+  if len(s:copy_views) == 2
+    break
+  endif
+  sleep 20m
+  let s:remaining -= 1
+endwhile
+if len(get(s:, 'copy_views', [])) != 2
+  call writefile(['FAIL: real clangd AST did not render both same-type copy views; ' .. execute('AutoVeilStatus')->trim()], '/dev/stderr')
+  cquit
+endif
+if s:copy_views[0].length != strlen('IntegrationState')
+  call writefile(['FAIL: AST copy view did not cover the explicit type'], '/dev/stderr')
+  cquit
+endif
 call assert_equal(s:before, getline(1, '$'))
 call assert_false(&modified)
 if !empty(v:errors)
   call writefile(v:errors, '/dev/stderr')
   cquit
 endif
-call writefile(['PASS: real clangd hint and clang-tidy action rendered display-only'], '/dev/stdout')
+call writefile(['PASS: real clangd hint, clang-tidy action, and AST copy rendered display-only'], '/dev/stdout')
 AutoVeilDisable
 qall!

@@ -75,6 +75,10 @@ export def SupportsInlayHints(bufnr: number): bool
   return Supports(bufnr, 'inlayHintProvider', 'supports_inlay_hints')
 enddef
 
+export def SupportsAst(bufnr: number): bool
+  return Supports(bufnr, 'astProvider', 'supports_ast')
+enddef
+
 def DiagnosticKey(server: string, uri: string): string
   return server .. "\n" .. uri
 enddef
@@ -204,6 +208,117 @@ export def RequestInlayHints(
     },
     on_notification: (data) => HandleResponse(server, Callback, data),
   }])
+enddef
+
+def FinishAstRequest(
+    server: string,
+    candidate: dict<any>,
+    pending: dict<any>,
+    Callback: func,
+    data: any)
+  if type(data) == v:t_dict && type(get(data, 'response', 0)) == v:t_dict
+      && !has_key(data.response, 'error') && type(get(data.response, 'result', 0)) == v:t_dict
+    add(pending.result, {candidate: deepcopy(candidate), node: data.response.result})
+  else
+    pending.errors += 1
+  endif
+  pending.remaining -= 1
+  if pending.remaining == 0
+    Callback({ok: true, result: pending.result, errors: pending.errors, server: server})
+  endif
+enddef
+
+def SendAstRequest(
+    server: string,
+    bufnr: number,
+    identifier: dict<any>,
+    candidate: dict<any>,
+    pending: dict<any>,
+    Callback: func)
+  try
+    call('lsp#send_request', [server, {
+      method: 'textDocument/ast',
+      bufnr: bufnr,
+      params: {
+        textDocument: identifier,
+        range: candidate.range,
+      },
+      on_notification: (data) => FinishAstRequest(server, candidate, pending, Callback, data),
+    }])
+  catch
+    FinishAstRequest(server, candidate, pending, Callback, {})
+  endtry
+enddef
+
+export def RequestAsts(
+    bufnr: number,
+    candidates: list<dict<any>>,
+    Callback: func): void
+  var test = TestAdapter()
+  if !empty(test)
+    if type(get(test, 'requests', 0)) != v:t_list
+      test.requests = []
+    endif
+    add(test.requests, {kind: 'asts', bufnr: bufnr, candidates: deepcopy(candidates)})
+    Deliver(Callback, {ok: true, result: deepcopy(get(test, 'ast_responses', [])),
+      errors: 0, server: get(test, 'server', 'clangd')}, get(test, 'delay_ms', 0))
+    return
+  endif
+  var server = Server(bufnr)
+  if empty(server)
+    Callback({ok: false, error: 'clangd is not attached', result: [], server: ''})
+    return
+  endif
+  if empty(candidates)
+    Callback({ok: true, result: [], errors: 0, server: server})
+    return
+  endif
+  var identifier = call('lsp#get_text_document_identifier', [bufnr])
+  var pending = {remaining: len(candidates), result: [], errors: 0}
+  for candidate in candidates
+    SendAstRequest(server, bufnr, identifier, candidate, pending, Callback)
+  endfor
+enddef
+
+def FinishPreferAutoPart(
+    key: string,
+    pending: dict<any>,
+    Callback: func,
+    response: dict<any>)
+  pending[key] = response
+  pending.remaining -= 1
+  if pending.remaining != 0
+    return
+  endif
+  if !get(pending.actions, 'ok', false)
+    Callback(pending.actions)
+    return
+  endif
+  if !get(pending.asts, 'ok', false)
+    Callback(pending.asts)
+    return
+  endif
+  Callback({
+    ok: true,
+    result: {
+      actions: get(pending.actions, 'result', []),
+      copies: get(pending.asts, 'result', []),
+      ast_errors: get(pending.asts, 'errors', 0),
+    },
+    server: get(pending.actions, 'server', ''),
+  })
+enddef
+
+export def RequestPreferAuto(
+    bufnr: number,
+    requested: dict<any>,
+    candidates: list<dict<any>>,
+    Callback: func): void
+  var pending = {remaining: 2, actions: {}, asts: {}}
+  RequestCodeActions(bufnr, requested,
+    (response) => FinishPreferAutoPart('actions', pending, Callback, response))
+  RequestAsts(bufnr, candidates,
+    (response) => FinishPreferAutoPart('asts', pending, Callback, response))
 enddef
 
 export def CurrentUri(bufnr: number): string

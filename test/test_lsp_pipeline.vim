@@ -1,6 +1,7 @@
 vim9script
 
 import autoload 'autoveil/core.vim' as core
+import autoload 'autoveil/copies.vim' as copies
 import autoload 'autoveil/lsp.vim' as lsp
 
 def LspRange(line: number, start: number, finish: number): dict<any>
@@ -45,6 +46,66 @@ assert_equal(0, len(core.State().views))
 assert_equal('inlay-hints', g:autoveil_test_lsp.requests[-1].kind)
 core.Disable()
 bwipe!
+
+# The opt-in copy level merges clangd AST-proven copies with clang-tidy views.
+new
+setlocal filetype=cpp
+setline(1, ['void copies() {', '  State c = a;', '}'])
+setlocal nomodified
+var copy_requested = {start: {line: 0, character: 0}, end: {line: 2, character: 1}}
+var copy_candidate = copies.Candidates(bufnr(), copy_requested, 10)[0]
+var copy_expression = LspRange(1, 12, 13)
+var copy_ast = {
+  role: 'declaration',
+  kind: 'Var',
+  detail: 'c',
+  range: LspRange(1, 2, 13),
+  children: [
+    {role: 'type', kind: 'Enum', detail: 'State', range: LspRange(1, 2, 7)},
+    {
+      role: 'expression',
+      kind: 'ImplicitCast',
+      detail: 'LValueToRValue',
+      range: copy_expression,
+      children: [{role: 'expression', kind: 'DeclRef', detail: 'a', range: copy_expression}],
+    },
+  ],
+}
+g:autoveil_test_lsp.supports_ast = true
+g:autoveil_test_lsp.code_actions = []
+g:autoveil_test_lsp.ast_responses = [{candidate: copy_candidate, node: copy_ast}]
+g:autoveil_test_lsp.requests = []
+g:autoveil_prefer_auto_level = 'same-type-copies'
+var copy_state = core.State()
+copy_state.mode = 'prefer-auto'
+core.Enable()
+assert_equal(1, len(core.State().views))
+assert_equal('auto', values(core.State().views)[0].replacement)
+assert_equal(['code-actions', 'asts'],
+  g:autoveil_test_lsp.requests->mapnew((_, request) => request.kind))
+assert_equal('c', g:autoveil_test_lsp.requests[1].candidates[0].identifier)
+assert_false(&modified)
+core.SetPreferAutoLevel('conservative')
+assert_equal(0, len(core.State().views))
+assert_equal('code-actions', g:autoveil_test_lsp.requests[-1].kind)
+core.Disable()
+bwipe!
+
+# The stronger policy fails closed when clangd lacks its AST capability.
+new
+setlocal filetype=cpp
+setline(1, ['void copies() {', '  State c = a;', '}'])
+g:autoveil_prefer_auto_level = 'same-type-copies'
+g:autoveil_test_lsp.supports_ast = false
+var unsupported_state = core.State()
+unsupported_state.mode = 'prefer-auto'
+core.Enable()
+assert_match('does not advertise AST support', core.Status())
+assert_equal(0, len(core.State().views))
+core.Disable()
+bwipe!
+g:autoveil_test_lsp.supports_ast = true
+g:autoveil_prefer_auto_level = 'conservative'
 
 new
 setlocal filetype=cpp

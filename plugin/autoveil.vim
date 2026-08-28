@@ -12,6 +12,8 @@ g:autoveil_reveal_on_insert = get(g:, 'autoveil_reveal_on_insert', true)
 g:autoveil_reveal_under_cursor = get(g:, 'autoveil_reveal_under_cursor', true)
 g:autoveil_max_visible_lines = get(g:, 'autoveil_max_visible_lines', 300)
 g:autoveil_type_name_limit = get(g:, 'autoveil_type_name_limit', 80)
+g:autoveil_prefer_auto_level = get(g:, 'autoveil_prefer_auto_level', 'conservative')
+g:autoveil_max_ast_requests = get(g:, 'autoveil_max_ast_requests', 40)
 
 import autoload 'autoveil/core.vim' as core
 import autoload 'autoveil/lsp.vim' as lsp
@@ -20,6 +22,7 @@ command! -bar AutoVeilEnable core.Enable()
 command! -bar AutoVeilDisable core.Disable()
 command! -bar AutoVeilToggle core.Toggle()
 command! -bar -nargs=1 -complete=customlist,autoveil#ModeComplete AutoVeilMode core.SetMode(<q-args>)
+command! -bar -nargs=1 -complete=customlist,autoveil#PreferAutoLevelComplete AutoVeilPreferAutoLevel core.SetPreferAutoLevel(<q-args>)
 command! -bar AutoVeilRefresh core.Refresh(true)
 command! -bar AutoVeilReveal core.Reveal()
 command! -bar AutoVeilStatus echo core.Status()
