@@ -13,6 +13,13 @@ AutoFlip never applies an edit. The buffer, undo history, saved file, search,
 yanks, macros, navigation, and Git diff continue to use the original source.
 Only Vim conceal matches and virtual text change what a window displays.
 
+## Demo
+
+This real Vim/clangd session shows `prefer-auto`, selective cursor reveal,
+`show-deduced-types`, and the untouched source returning on disable:
+
+![AutoFlip display-only C++ type views](docs/assets/autoflip-demo.gif)
+
 The package/repository name is `vim-autoflip`; its Vim command and display
 prefix is `AutoFlip`, and its Vim9script/global namespace is `autoflip`. This
 is a deliberate breaking identity with no compatibility aliases. Remove an

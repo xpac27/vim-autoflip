@@ -1,5 +1,14 @@
 # Engineering journal
 
+## 2026-08-29 09:41 CEST - Add README demonstration
+
+- Recorded a real Vim 9.x, vim-lsp, and clangd session at a fixed
+  README-friendly size rather than simulating plugin output.
+- Demonstrated prefer-auto substitutions, selective cursor reveal,
+  show-deduced-types, disable cleanup, and the unchanged source buffer.
+- Converted the recording to a 900x558, 10 FPS looping GIF and embedded it
+  near the README introduction.
+
 ## 2026-08-28 21:05 CEST - Complete vim-autoflip rename
 
 - Inventoried runtime paths, public commands, globals, buffer state,
