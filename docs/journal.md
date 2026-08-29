@@ -1,5 +1,17 @@
 # Engineering journal
 
+## 2026-08-29 10:36 CEST - Improve README demonstration legibility
+
+- Re-recorded the real Vim, vim-lsp, and clangd demonstration with Kitty
+  explicitly configured to use the installed Hack font.
+- Enabled Vim C++ syntax and vim-lsp semantic highlighting in the hermetic demo
+  configuration so types, keywords, functions, and comments remain distinct.
+- Expanded the fixture with labeled, separated examples for conservative
+  clang-tidy substitution, AST-backed aggressive substitution, and deduced
+  type display.
+- Updated the cursor choreography for the longer fixture without jumps and
+  regenerated the looping 900x594 GIF at 10 FPS.
+
 ## 2026-08-29 10:16 CEST - Add before-and-after use cases
 
 - Added a README table comparing source text with the display-only AutoFlip
