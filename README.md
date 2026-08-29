@@ -39,7 +39,7 @@ With vim-plug, load vim-lsp before AutoFlip:
 
 ```vim
 Plug 'prabirshrestha/vim-lsp'
-Plug '/absolute/path/to/vim-autoflip'
+Plug 'xpac27/vim-autoflip'
 ```
 
 Or copy/clone this repository below a Vim package `start` directory. Run
@@ -182,8 +182,8 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
 
 ## Intentional limitations
 
-- Only the listed C/C++ header/source extensions and simple initialized local
-  variables are targeted.
+- Only `.cc`, `.cpp`, `.cxx`, `.h`, `.hh`, `.hpp`, and `.hxx` C++ files and
+  simple initialized local variables are targeted.
 - Conservative `prefer-auto` accepts direct, single-edit `WorkspaceEdit` code
   actions only. Command-backed or multi-file fixes are ignored.
 - `same-type-copies` intentionally recognizes only one-line, single-declarator
