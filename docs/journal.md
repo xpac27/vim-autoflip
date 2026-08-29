@@ -1,5 +1,12 @@
 # Engineering journal
 
+## 2026-08-29 10:59 CEST - Crop README demonstration border
+
+- Removed two pixels from every edge of the animated README demonstration to
+  eliminate the captured Hyprland window border.
+- Preserved all 308 frames, 10 FPS timing, 30.8-second duration, and 92-color
+  palette without scaling; the final GIF is 896x590.
+
 ## 2026-08-29 10:36 CEST - Improve README demonstration legibility
 
 - Re-recorded the real Vim, vim-lsp, and clangd demonstration with Kitty
