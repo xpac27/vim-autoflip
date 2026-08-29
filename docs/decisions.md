@@ -1,5 +1,21 @@
 # Architecture decisions
 
+## 2026-08-29 09:50 CEST - Subscribe to diagnostics during plugin load
+
+Reason:
+
+- clangd quick fixes require the original diagnostic in code-action context;
+- public vim-lsp notification registration does not replay earlier messages;
+- an eager, idempotent callback registration has no buffer or server side
+  effects and preserves manual enablement.
+
+Rejected:
+
+- register only on enable: misses diagnostics already published by clangd;
+- read vim-lsp's stored diagnostics: requires private internal APIs;
+- send a synthetic document change to force diagnostics: misrepresents buffer
+  state and violates the display-only boundary.
+
 ## 2026-08-28 21:05 CEST - Use one AutoFlip identity without aliases
 
 Reason:

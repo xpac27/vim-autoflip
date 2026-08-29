@@ -1,5 +1,13 @@
 # Features
 
+## 2026-08-29 09:50 CEST - Reliable delayed enable
+
+- AutoFlip registers for vim-lsp notifications during plugin load, before a
+  startup C++ buffer can publish its first diagnostics.
+- Manually enabling AutoFlip after clangd has finished therefore retains the
+  cached `modernize-use-auto` authority needed for conservative substitutions.
+- Registration remains idempotently retried on `lsp_setup` and enable.
+
 ## 2026-08-28 21:05 CEST - vim-autoflip product identity
 
 - The package and repository identity is `vim-autoflip`.

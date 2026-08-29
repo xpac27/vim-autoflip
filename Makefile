@@ -1,6 +1,7 @@
 .PHONY: test lint integration check
 
 test:
+	vim -Nu NONE -U NONE -i NONE -n -es -S test/early_init.vim
 	vim -Nu NONE -U NONE -i NONE -n -es -S test/run.vim
 
 lint:

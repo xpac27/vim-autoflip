@@ -1,5 +1,16 @@
 # Architecture
 
+## 2026-08-29 09:50 CEST - Eager diagnostic subscription
+
+The plugin entry point initializes the LSP adapter immediately after import.
+This registers AutoFlip's public vim-lsp notification callback before clangd
+can publish diagnostics for a startup buffer. The existing `lsp_setup` and
+enable paths call the same idempotent initializer as dependency-order
+fallbacks.
+
+Diagnostics remain adapter-owned raw protocol data. Core still performs no
+vim-lsp state inspection and requests no code action until AutoFlip is enabled.
+
 ## 2026-08-28 21:05 CEST - Product namespace
 
 The package identity is `vim-autoflip`. Runtime entry points are

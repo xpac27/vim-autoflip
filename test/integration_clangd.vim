@@ -18,8 +18,11 @@ execute 'edit ' .. fnameescape($AUTOFLIP_TEST_ROOT .. '/test/fixtures/integratio
 setlocal filetype=cpp
 let s:before = getline(1, '$')
 setlocal nomodified
-AutoFlipMode show-deduced-types
-AutoFlipEnable
+let g:autoflip_integration_diagnostics_ready = 0
+augroup autoflip_integration_diagnostics
+  autocmd!
+  autocmd User lsp_diagnostics_updated let g:autoflip_integration_diagnostics_ready = 1
+augroup END
 call lsp#activate()
 
 let s:remaining = 500
@@ -32,6 +35,20 @@ if !lsp#is_server_running('clangd-autoflip-integration')
   cquit
 endif
 
+let s:remaining = 500
+while s:remaining > 0 && !g:autoflip_integration_diagnostics_ready
+  sleep 20m
+  let s:remaining -= 1
+endwhile
+if !g:autoflip_integration_diagnostics_ready
+  call writefile(['FAIL: clangd did not publish diagnostics before delayed enable'], '/dev/stderr')
+  cquit
+endif
+
+" Enabling after diagnostics were published must retain the cached clang-tidy
+" authority needed by the later prefer-auto request.
+AutoFlipMode show-deduced-types
+AutoFlipEnable
 AutoFlipRefresh
 let s:remaining = 500
 while s:remaining > 0 && len(get(get(b:, 'autoflip_state', {}), 'views', {})) == 0

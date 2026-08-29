@@ -1,5 +1,12 @@
 # Tests
 
+## 2026-08-29 09:50 CEST - Early diagnostic registration coverage
+
+`test/early_init.vim` loads AutoFlip against the fake public vim-lsp adapter
+and asserts that notification registration occurs during plugin load. The real
+clangd integration now waits for diagnostics while AutoFlip is disabled, then
+enables it and requires the cached `modernize-use-auto` action to render.
+
 ## 2026-08-28 21:05 CEST - AutoFlip identity coverage
 
 `test/test_identity.vim` asserts all eight `AutoFlip` commands, nine

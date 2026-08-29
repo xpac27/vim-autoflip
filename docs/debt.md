@@ -1,5 +1,20 @@
 # Technical debt and intentional limitations
 
+## 2026-08-29 09:50 CEST - Late lazy loading cannot replay diagnostics
+
+Impact: loading the AutoFlip runtime itself only after clangd has already
+published the current diagnostics cannot recover those past notifications
+until clangd publishes again. Normal startup loading is covered by eager
+registration, including later `:AutoFlipEnable`.
+
+Reason: current public vim-lsp APIs support notification registration but do
+not expose or replay the stored diagnostic payloads.
+
+Risk: an unusually lazy-loaded installation can temporarily omit
+clang-tidy-backed substitutions. Load AutoFlip normally before opening C++
+buffers; a future public vim-lsp diagnostic snapshot/replay API could remove
+this limitation.
+
 ## 2026-08-28 21:05 CEST - Breaking product namespace
 
 Impact: existing user configuration and mappings must use the `autoflip` and

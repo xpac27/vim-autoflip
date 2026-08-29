@@ -18,6 +18,10 @@ g:autoflip_max_ast_requests = get(g:, 'autoflip_max_ast_requests', 40)
 import autoload 'autoflip/core.vim' as core
 import autoload 'autoflip/lsp.vim' as lsp
 
+# Register before clangd can publish diagnostics for a startup buffer. The
+# lsp_setup and Enable() calls below remain idempotent fallbacks.
+lsp.Initialize()
+
 command! -bar AutoFlipEnable core.Enable()
 command! -bar AutoFlipDisable core.Disable()
 command! -bar AutoFlipToggle core.Toggle()

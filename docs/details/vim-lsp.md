@@ -1,5 +1,18 @@
 # vim-lsp integration details
 
+## 2026-08-29 09:50 CEST - Diagnostic subscription timing
+
+`modernize-use-auto` quick fixes are matched through the diagnostics supplied
+in `textDocument/codeAction` context. vim-lsp's public notification registry
+does not replay notifications that were published before callback
+registration.
+
+AutoFlip therefore calls its idempotent adapter initializer during plugin
+load, before startup buffers attach to clangd. `User lsp_setup` and
+`:AutoFlipEnable` retry initialization for unusual dependency ordering. This
+keeps delayed manual enable reliable without reading private vim-lsp
+diagnostic state or sending a fake document change.
+
 ## 2026-08-28 20:29 CEST - clangd AST requests
 
 The opt-in `same-type-copies` level additionally reads `astProvider` through
