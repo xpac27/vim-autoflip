@@ -1,5 +1,29 @@
 # Engineering journal
 
+## 2026-08-29 10:00 CEST - Replace README demonstration
+
+- Re-recorded the real session after the eager diagnostic subscription fix;
+  the clang-tidy-authorized iterator and both AST-authorized copies now render
+  as `auto`.
+- Loaded the user's Humdrum colorscheme in a hermetic runtime, excluding
+  unrelated personal autocommands from the recording process.
+- Replaced cursor jumps with visible line-by-line, word-by-word movement and
+  moved the compositor pointer outside the captured output.
+- Regenerated the looping 900x558 GIF at 10 FPS and visually inspected the
+  opening frame plus twelve key frames across the complete sequence.
+
+## 2026-08-29 09:50 CEST - Preserve diagnostics before delayed enable
+
+- Reproduced that standalone clang-tidy emitted the iterator replacement while
+  the README demo rendered only AST-backed copy substitutions.
+- Found that vim-lsp had published diagnostics before AutoFlip registered its
+  notification callback on manual enable; public registration does not replay
+  old notifications.
+- Moved the idempotent adapter initialization to plugin load while retaining
+  setup and enable fallbacks. No server request or buffer mutation was added.
+- Added a deterministic plugin-load contract and changed the real integration
+  to publish diagnostics while AutoFlip is disabled before testing enable.
+
 ## 2026-08-29 09:41 CEST - Add README demonstration
 
 - Recorded a real Vim 9.x, vim-lsp, and clangd session at a fixed

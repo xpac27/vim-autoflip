@@ -15,8 +15,9 @@ Only Vim conceal matches and virtual text change what a window displays.
 
 ## Demo
 
-This real Vim/clangd session shows `prefer-auto`, selective cursor reveal,
-`show-deduced-types`, and the untouched source returning on disable:
+This real Vim/vim-lsp/clangd session shows a clang-tidy iterator replacement,
+AST-proven copy replacements, selective cursor reveal, `show-deduced-types`,
+and the untouched source returning on disable:
 
 ![AutoFlip display-only C++ type views](docs/assets/autoflip-demo.gif)
 
@@ -206,6 +207,9 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
   buffer-owned. Insert and explicit command reveal intentionally expose all
   types. Conceal matches and option restoration remain independently tracked
   for each window.
+- Lazy-loading the AutoFlip runtime itself after clangd has already published
+  diagnostics can omit clang-tidy candidates until clangd publishes again.
+  Normal startup loading, including later manual enable, caches them safely.
 - AutoFlip recognizes an attached server whose vim-lsp name or info name
   contains `clangd`.
 
