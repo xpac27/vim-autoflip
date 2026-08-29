@@ -1,5 +1,13 @@
 # Engineering journal
 
+## 2026-08-29 10:16 CEST - Add before-and-after use cases
+
+- Added a README table comparing source text with the display-only AutoFlip
+  view for conservative prefer-auto, AST-backed aggressive prefer-auto, and
+  deduced-type reveal.
+- Used block-form code markup inside each table cell and labeled the semantic
+  authority for every transformation.
+
 ## 2026-08-29 10:00 CEST - Replace README demonstration
 
 - Re-recorded the real session after the eager diagnostic subscription fix;

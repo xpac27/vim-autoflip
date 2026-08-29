@@ -21,6 +21,17 @@ and the untouched source returning on disable:
 
 ![AutoFlip display-only C++ type views](docs/assets/autoflip-demo.gif)
 
+## Use cases
+
+Every “after” cell is display-only; the source remains exactly as shown in
+“before.”
+
+| Use case | Before | AutoFlip view |
+| --- | --- | --- |
+| Prefer `auto` — conservative<br><sub>clang-tidy `modernize-use-auto` via clangd</sub> | <pre><code>std::vector&lt;int&gt;::iterator it = values.begin();</code></pre> | <pre><code>auto it = values.begin();</code></pre> |
+| Prefer `auto` — aggressive<br><sub>additional clangd AST proof</sub> | <pre><code>Stage next = current;</code></pre> | <pre><code>auto next = current;</code></pre> |
+| Reveal `auto`<br><sub>clangd deduced-type inlay hint</sub> | <pre><code>auto answer = 42;</code></pre> | <pre><code>int answer = 42;</code></pre> |
+
 The package/repository name is `vim-autoflip`; its Vim command and display
 prefix is `AutoFlip`, and its Vim9script/global namespace is `autoflip`. This
 is a deliberate breaking identity with no compatibility aliases. Remove an
