@@ -1,5 +1,21 @@
 # Engineering journal
 
+## 2026-08-29 11:09 CEST - Finalize compact README demonstration
+
+- Regenerated the approved README GIF directly from the original recording,
+  cropping three pixels from every edge to remove the final Hyprland border.
+- Replaced the tracked asset with the 800x526, 10 FPS result so GitHub can
+  display it at its natural width without fractional browser scaling.
+- Kept the responsive vertical use-case sections introduced during preview.
+
+## 2026-08-29 11:05 CEST - Make README use cases responsive
+
+- Replaced the three-column use-case table with vertical source and AutoFlip
+  view sections so GitHub no longer needs a page-level horizontal scrollbar.
+- Generated an 800x527 GIF preview directly from the original recording for
+  sharpness review; the tracked 896x590 demonstration remains unchanged until
+  that preview is approved.
+
 ## 2026-08-29 10:59 CEST - Crop README demonstration border
 
 - Removed two pixels from every edge of the animated README demonstration to

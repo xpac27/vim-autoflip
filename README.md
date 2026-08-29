@@ -23,14 +23,56 @@ and the untouched source returning on disable:
 
 ## Use cases
 
-Every “after” cell is display-only; the source remains exactly as shown in
-“before.”
+Every AutoFlip view below is display-only; the source remains exactly as
+shown in its source block.
 
-| Use case | Before | AutoFlip view |
-| --- | --- | --- |
-| Prefer `auto` — conservative<br><sub>clang-tidy `modernize-use-auto` via clangd</sub> | <pre><code>std::vector&lt;int&gt;::iterator it = values.begin();</code></pre> | <pre><code>auto it = values.begin();</code></pre> |
-| Prefer `auto` — aggressive<br><sub>additional clangd AST proof</sub> | <pre><code>Stage next = current;</code></pre> | <pre><code>auto next = current;</code></pre> |
-| Reveal `auto`<br><sub>clangd deduced-type inlay hint</sub> | <pre><code>auto answer = 42;</code></pre> | <pre><code>int answer = 42;</code></pre> |
+### Conservative `prefer-auto`
+
+Authority: clang-tidy `modernize-use-auto`, delivered by clangd.
+
+Source:
+
+```cpp
+std::vector<int>::iterator it = values.begin();
+```
+
+AutoFlip view:
+
+```cpp
+auto it = values.begin();
+```
+
+### Aggressive `prefer-auto`
+
+Authority: additional structured-AST proof from clangd.
+
+Source:
+
+```cpp
+Stage next = current;
+```
+
+AutoFlip view:
+
+```cpp
+auto next = current;
+```
+
+### Show the deduced type
+
+Authority: clangd's deduced-type inlay hint.
+
+Source:
+
+```cpp
+auto answer = 42;
+```
+
+AutoFlip view:
+
+```cpp
+int answer = 42;
+```
 
 The package/repository name is `vim-autoflip`; its Vim command and display
 prefix is `AutoFlip`, and its Vim9script/global namespace is `autoflip`. This
