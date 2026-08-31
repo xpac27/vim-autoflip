@@ -39,15 +39,17 @@ types.
 ## 2026-08-31 14:51 CEST - Broader AST-proven local authority
 
 `ast-proven-locals` retains all conservative and `same-type-copies` results,
-then adds three exact PCClangd AST shapes: direct class copy construction
+then adds four exact PCClangd AST shapes: direct class copy construction
 (`CXXConstruct` with one `NoOp` cast over a `DeclRef`), lvalue
 `CXXOperatorCall` `[]` bindings to a single `&` declaration, and direct
-pointer-variable reads. The corresponding displayed spellings are `auto`,
-`auto&`, and `auto*`.
+pointer-variable reads, and unwrapped `Call`/`CXXMemberCall` value results.
+The corresponding displayed spellings are `auto`, `auto&`, `auto*`, and
+`const auto` for a top-level const value.
 
 The scanner remains a bounded nomination mechanism and supports only one-line,
-single-declarator, non-cv declarations. AST validation requires exact
-declaration/type/initializer ranges and fails closed. PCClangd exposes the
+single-declarator, non-cv declarations, plus a direct-call initializer on the
+immediately following line. AST validation requires exact declaration/type/
+initializer ranges and fails closed. PCClangd exposes the
 lvalue category of overloaded `operator[]` in its extension `arcana` field;
 that field is used only for this otherwise-unavailable lvalue proof. No
 container, template, or project type name is recognized.

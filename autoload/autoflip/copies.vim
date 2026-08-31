@@ -6,7 +6,12 @@ import autoload 'autoflip/types.vim' as types
 
 const SIMPLE_COPY = '^\(\s*\)\([_a-zA-Z][_a-zA-Z0-9:<> ]*\)\s\+\(\h\w*\)\s*=\s*\(\h\w*\)\s*;\s*$'
 const AST_PROVEN_LOCAL = '^\(\s*\)\([_a-zA-Z][_a-zA-Z0-9:<> ]*\)\s*\(\*\|&\)\s*\(\h\w*\)\s*=\s*\([^;]\+\)\s*;\s*$'
+const AST_PROVEN_VALUE = '^\(\s*\)\(const\s\+\)\?\(\%(\h\|::\)[_a-zA-Z0-9:<> ]*\)\s\+\(\h\w*\)\s*=\s*\([^;]\+\)\s*;\s*$'
+const AST_PROVEN_VALUE_PREFIX = '^\(\s*\)\(const\s\+\)\?\(\%(\h\|::\)[_a-zA-Z0-9:<> ]*\)\s\+\(\h\w*\)\s*=\s*$'
+const AST_PROVEN_VALUE_CONTINUATION = '^\(\s*\)\([^;]\+\)\s*;\s*$'
 const DISALLOWED_TYPE_WORDS = ['auto', 'const', 'volatile', 'static', 'thread_local',
+  'constexpr', 'constinit', 'extern', 'register', 'mutable', 'typedef', 'using']
+const DISALLOWED_VALUE_TYPE_WORDS = ['auto', 'volatile', 'static', 'thread_local',
   'constexpr', 'constinit', 'extern', 'register', 'mutable', 'typedef', 'using']
 
 def PositionEqual(left: any, right: any): bool
@@ -23,6 +28,15 @@ enddef
 
 def PlainType(type_text: string): bool
   for word in DISALLOWED_TYPE_WORDS
+    if type_text =~# '\C\<' .. word .. '\>'
+      return false
+    endif
+  endfor
+  return true
+enddef
+
+def PlainValueType(type_text: string): bool
+  for word in DISALLOWED_VALUE_TYPE_WORDS
     if type_text =~# '\C\<' .. word .. '\>'
       return false
     endif
@@ -149,6 +163,103 @@ export def AstProvenCandidates(
       break
     endif
   endfor
+  for lnum in range(first, last)
+    if len(result) >= maximum
+      break
+    endif
+    var line = syntax.SafeDeclarationLine(bufnr, lnum)
+    if empty(line)
+      continue
+    endif
+    var matched = matchlist(line, AST_PROVEN_VALUE)
+    if empty(matched) || !PlainValueType(matched[3])
+      continue
+    endif
+    var initializer = trim(matched[5])
+    if empty(initializer) || initializer =~# '^\h\w*$'
+        || initializer =~# '^\h\w*\s*,'
+      continue
+    endif
+    var type_start = strlen(matched[1])
+    var base_type_start = type_start + strlen(matched[2])
+    var type_end = base_type_start + strlen(matched[3])
+    var semicolon = match(line, ';\s*$')
+    var initializer_start = match(line, '=\s*\zs')
+    if semicolon < 0 || initializer_start < 0 || !syntax.IsLocal(bufnr, lnum, type_start + 1)
+      continue
+    endif
+    add(result, {
+      lnum: lnum,
+      identifier: matched[4],
+      type_range: {
+        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, base_type_start))},
+        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
+      },
+      replacement_range: {
+        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
+        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
+      },
+      range: {
+        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
+        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, semicolon))},
+      },
+      initializer: initializer,
+      initializer_range: {
+        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, initializer_start))},
+        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, initializer_start + strlen(initializer)))},
+      },
+      declarator: 'value',
+      replacement: empty(matched[2]) ? 'auto' : 'const auto',
+    })
+  endfor
+  for lnum in range(first, last - 1)
+    if len(result) >= maximum
+      break
+    endif
+    var line = syntax.SafeDeclarationLine(bufnr, lnum)
+    var continuation = syntax.SafeDeclarationLine(bufnr, lnum + 1)
+    var matched = matchlist(line, AST_PROVEN_VALUE_PREFIX)
+    var continued = matchlist(continuation, AST_PROVEN_VALUE_CONTINUATION)
+    if empty(matched) || empty(continued) || !PlainValueType(matched[3])
+      continue
+    endif
+    var initializer = trim(continued[2])
+    if empty(initializer) || initializer =~# '^\h\w*$'
+        || initializer =~# '^\h\w*\s*,'
+      continue
+    endif
+    var type_start = strlen(matched[1])
+    var base_type_start = type_start + strlen(matched[2])
+    var type_end = base_type_start + strlen(matched[3])
+    var semicolon = match(continuation, ';\s*$')
+    var initializer_start = strlen(continued[1])
+    if semicolon < 0 || !syntax.IsLocal(bufnr, lnum, type_start + 1)
+      continue
+    endif
+    add(result, {
+      lnum: lnum,
+      identifier: matched[4],
+      type_range: {
+        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, base_type_start))},
+        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
+      },
+      replacement_range: {
+        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
+        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
+      },
+      range: {
+        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
+        end: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, semicolon))},
+      },
+      initializer: initializer,
+      initializer_range: {
+        start: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, initializer_start))},
+        end: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, initializer_start + strlen(initializer)))},
+      },
+      declarator: 'value',
+      replacement: empty(matched[2]) ? 'auto' : 'const auto',
+    })
+  endfor
   return result
 enddef
 
@@ -182,12 +293,52 @@ def ExpressionRange(candidate: dict<any>): dict<any>
 enddef
 
 def NewAstProvenView(bufnr: number, candidate: dict<any>, type_node: dict<any>): dict<any>
-  var bytes = rangeutil.ByteRange(bufnr, type_node.range)
+  var bytes = rangeutil.ByteRange(bufnr, get(candidate, 'replacement_range', type_node.range))
   if empty(bytes) || bytes.lnum != get(candidate, 'lnum', 0)
     return {}
   endif
   return types.NewView('prefer-auto', bytes.lnum, bytes.col, bytes.length,
     get(candidate, 'replacement', 'auto'))
+enddef
+
+def ValidateCallResult(bufnr: number, candidate: dict<any>, node: dict<any>): dict<any>
+  if !ValidDeclaration(candidate, node)
+    return {}
+  endif
+  var type_node = OneChild(node, 'type')
+  var expression = OneChild(node, 'expression')
+  if !ValidType(candidate, type_node)
+      || !DirectCall(expression, get(candidate, 'initializer_range', 0))
+    return {}
+  endif
+  return NewAstProvenView(bufnr, candidate, type_node)
+enddef
+
+def DirectCall(expression: dict<any>, expected_range: dict<any>): bool
+  if empty(expression) || !RangeEqual(get(expression, 'range', 0), expected_range)
+    return false
+  endif
+  if index(['Call', 'CXXMemberCall'], get(expression, 'kind', '')) >= 0
+    return true
+  endif
+  if get(expression, 'kind', '') !=# 'ExprWithCleanups'
+    return false
+  endif
+  var cast = OneChild(expression, 'expression')
+  if empty(cast) || get(cast, 'kind', '') !=# 'ImplicitCast'
+      || get(cast, 'detail', '') !=# 'NoOp'
+      || !RangeEqual(get(cast, 'range', 0), expected_range)
+    return false
+  endif
+  var temporary = OneChild(cast, 'expression')
+  if empty(temporary) || get(temporary, 'kind', '') !=# 'CXXBindTemporary'
+      || !RangeEqual(get(temporary, 'range', 0), expected_range)
+    return false
+  endif
+  var call = OneChild(temporary, 'expression')
+  return !empty(call)
+      && get(call, 'kind', '') ==# 'CXXMemberCall'
+      && RangeEqual(get(call, 'range', 0), expected_range)
 enddef
 
 def ValidateCopyConstruction(bufnr: number, candidate: dict<any>, node: dict<any>): dict<any>
@@ -269,6 +420,9 @@ export def ValidateAstProven(bufnr: number, candidate: any, node: any): dict<any
   endif
   if declarator ==# '*'
     return ValidatePointer(bufnr, candidate, node)
+  endif
+  if declarator ==# 'value'
+    return ValidateCallResult(bufnr, candidate, node)
   endif
   var view = Validate(bufnr, candidate, node)
   return !empty(view) ? view : ValidateCopyConstruction(bufnr, candidate, node)

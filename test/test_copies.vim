@@ -111,6 +111,51 @@ def PointerAst(candidate: dict<any>): dict<any>
   }
 enddef
 
+def CallAst(candidate: dict<any>): dict<any>
+  var type_kind = candidate.replacement ==# 'const auto' ? 'Qualified' : 'Typedef'
+  var type_detail = candidate.replacement ==# 'const auto' ? 'const' : 'Count'
+  return {
+    role: 'declaration',
+    kind: 'Var',
+    detail: candidate.identifier,
+    range: candidate.range,
+    children: [
+      {role: 'type', kind: type_kind, detail: type_detail, range: candidate.type_range},
+      {role: 'expression', kind: 'Call', range: candidate.initializer_range},
+    ],
+  }
+enddef
+
+def WrappedMemberCallAst(candidate: dict<any>): dict<any>
+  return {
+    role: 'declaration',
+    kind: 'Var',
+    detail: candidate.identifier,
+    range: candidate.range,
+    children: [
+      {role: 'type', kind: 'Qualified', detail: 'const', range: candidate.type_range},
+      {
+        role: 'expression',
+        kind: 'ExprWithCleanups',
+        range: candidate.initializer_range,
+        children: [{
+          role: 'expression',
+          kind: 'ImplicitCast',
+          detail: 'NoOp',
+          range: candidate.initializer_range,
+          children: [{
+            role: 'expression',
+            kind: 'CXXBindTemporary',
+            range: candidate.initializer_range,
+            children: [{role: 'expression', kind: 'CXXMemberCall',
+              range: candidate.initializer_range}],
+          }],
+        }],
+      },
+    ],
+  }
+enddef
+
 new
 setlocal filetype=cpp
 setline(1, [
@@ -129,11 +174,15 @@ setline(1, [
   '    Value& returned = factory();',
   '    Value* null = nullptr;',
   '    Value&& rvalue = values[index];',
+  '    const Count hash = hashValue();',
+  '    Count generated = makeCount();',
+  '    const Holder held =',
+  '      factory.makeHolder();',
   '  }',
   '};',
   'State field = other;',
 ])
-var requested = {start: {line: 0, character: 0}, end: {line: 11, character: 20}}
+var requested = {start: {line: 0, character: 0}, end: {line: 19, character: 20}}
 var candidates = copies.Candidates(bufnr(), requested, 20)
 assert_equal(4, len(candidates))
 assert_equal(['c', 'd', 'converted', 'next'], candidates->mapnew((_, item) => item.identifier))
@@ -169,21 +218,29 @@ assert_equal(1, len(copies.Candidates(bufnr(), requested, 1)))
 assert_equal([], copies.Candidates(bufnr(), requested, 0))
 
 var ast_proven = copies.AstProvenCandidates(bufnr(), requested, 20)
-assert_equal(['c', 'd', 'converted', 'next', 'reference', 'pointer'],
+assert_equal(['c', 'd', 'converted', 'next', 'reference', 'pointer', 'returned', 'null', 'made', 'hash', 'generated', 'held'],
   ast_proven->mapnew((_, item) => item.identifier))
 var next = Candidate(ast_proven, 'next')
 var reference = Candidate(ast_proven, 'reference')
 var pointer = Candidate(ast_proven, 'pointer')
+var hash = Candidate(ast_proven, 'hash')
+var generated = Candidate(ast_proven, 'generated')
+var held = Candidate(ast_proven, 'held')
 assert_equal({}, Candidate(ast_proven, 'rvalue'))
 assert_equal('auto&', reference.replacement)
 assert_equal('auto*', pointer.replacement)
+assert_equal('const auto', hash.replacement)
+assert_equal('auto', generated.replacement)
+assert_equal('const auto', held.replacement)
 
 var ast_proven_views = copies.NormalizeAstProven(bufnr(), [
   {candidate: next, node: ConstructAst(next)},
   {candidate: reference, node: ReferenceSubscriptAst(reference)},
   {candidate: pointer, node: PointerAst(pointer)},
+  {candidate: hash, node: CallAst(hash)},
+  {candidate: generated, node: CallAst(generated)},
 ])
-assert_equal(['auto', 'auto&', 'auto*'],
+assert_equal(['auto', 'auto&', 'auto*', 'const auto', 'auto'],
   ast_proven_views->mapnew((_, view) => view.replacement))
 
 assert_equal({}, copies.ValidateAstProven(bufnr(), reference, ReferenceSubscriptAst(reference, false)))
@@ -194,4 +251,9 @@ var null_ast = PointerAst(pointer)
 null_ast.children[1].kind = 'ImplicitCast'
 null_ast.children[1].detail = 'NullToPointer'
 assert_equal({}, copies.ValidateAstProven(bufnr(), pointer, null_ast))
+var conversion_call = CallAst(hash)
+conversion_call.children[1].kind = 'ImplicitCast'
+conversion_call.children[1].detail = 'ConstructorConversion'
+assert_equal({}, copies.ValidateAstProven(bufnr(), hash, conversion_call))
+assert_equal('const auto', copies.ValidateAstProven(bufnr(), held, WrappedMemberCallAst(held)).replacement)
 bwipe!

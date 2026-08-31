@@ -114,6 +114,8 @@ g:autoflip_prefer_auto_level   String. Default: "conservative".
                       direct class copies, lvalue Type& target = object[index]
                       bindings, and direct Type* target = source reads when
                       clangd reports their exact AST shapes.
+                      Direct call results are also supported and retain a
+                      top-level const spelling as const auto.
 
                                     *g:autoflip_max_ast_requests*
 g:autoflip_max_ast_requests    Number. Default: 40. Maximum additional AST
@@ -157,7 +159,10 @@ rendering without changing the buffer.
 The ast-proven-locals level also scans non-cv, single-declarator Type& and
 Type* declarations. It accepts only a direct class copy construction, an
 lvalue operator[] call for a reference binding, or a direct pointer-variable
-read. Exact declaration, type, and initializer ranges are always required.
+read. It also accepts unwrapped Call and CXXMemberCall value results, using
+const auto for a top-level const declaration. Exact declaration, type, and
+initializer ranges are always required. A direct call may occupy the one line
+immediately following its declaration.
 PCClangd exposes the lvalue category of overloaded operator[] in its AST
 extension arcana field; AutoFlip uses that field only for this proof.
 
@@ -187,8 +192,9 @@ when clangd's AST proves no conversion beyond LValueToRValue. Qualifiers,
 pointers, references, calls, constructors, casts, conversions, and ambiguous
 AST nodes are skipped at that level. ast-proven-locals additionally accepts
 only single & or * declarators with the exact documented AST proof. Rvalue
-references, null pointers, general calls, conversions, macros, multi-
-declarators, and ambiguous AST nodes are skipped.
+references, null pointers, conversion-wrapped calls, conversions, macros,
+multi-declarators, wider multiline declarations, and ambiguous AST nodes are
+skipped.
 
 show-deduced-types supports simple initialized local auto declarations.
 Command actions, multi-file edits, fields, aliases, function returns,

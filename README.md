@@ -211,6 +211,11 @@ not cut into a potentially misleading C++ type.
     expression; and
   - `Type* target = source;` when clangd reports a direct pointer-variable
     read.
+  - `Type target = call(...);` and `const Type target = call(...);` when
+    clangd reports an unwrapped direct call result, rendered as `auto` and
+    `const auto` respectively.
+  - The same call-result form split over one adjacent continuation line:
+    `Type target =` followed by `call(...);`.
 
 For example, the stronger level can display both declarations as `auto`:
 
@@ -261,8 +266,10 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
   references, calls, constructors, casts, conversions, macros, and ambiguous
   AST shapes are skipped.
 - `ast-proven-locals` additionally recognizes only single `&` or `*`
-  declarators without cv qualifiers. It accepts only the exact AST shapes
-  documented above; rvalue references, null pointers, general calls, casts,
+  declarators without cv qualifiers, plus non-cv or top-level `const` value
+  declarations initialized by direct calls. It accepts only the exact AST
+  shapes documented above, with at most one adjacent call-only continuation
+  line; rvalue references, null pointers, conversion-wrapped calls, casts,
   conversions, multi-declarators, macros, and ambiguous AST nodes are skipped.
 - `show-deduced-types` currently accepts simple `auto name = ...`
   declarations. Direct-list initialization, function returns, parameters,

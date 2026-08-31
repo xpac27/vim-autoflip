@@ -130,6 +130,37 @@ core.Disable()
 bwipe!
 g:autoflip_prefer_auto_level = 'conservative'
 
+# The broadest policy preserves top-level const on direct call results.
+new
+setlocal filetype=cpp
+setline(1, ['void calls() {', '  const Count hash = hashValue();', '}'])
+setlocal nomodified
+var call_requested = {start: {line: 0, character: 0}, end: {line: 2, character: 1}}
+var call_candidate = copies.AstProvenCandidates(bufnr(), call_requested, 10)[0]
+var call_ast = {
+  role: 'declaration',
+  kind: 'Var',
+  detail: 'hash',
+  range: call_candidate.range,
+  children: [
+    {role: 'type', kind: 'Qualified', detail: 'const', range: call_candidate.type_range},
+    {role: 'expression', kind: 'Call', range: call_candidate.initializer_range},
+  ],
+}
+g:autoflip_test_lsp.code_actions = []
+g:autoflip_test_lsp.ast_responses = [{candidate: call_candidate, node: call_ast}]
+g:autoflip_test_lsp.requests = []
+g:autoflip_prefer_auto_level = 'ast-proven-locals'
+var call_state = core.State()
+call_state.mode = 'prefer-auto'
+core.Enable()
+assert_equal(1, len(core.State().views))
+assert_equal('const auto', values(core.State().views)[0].replacement)
+assert_false(&modified)
+core.Disable()
+bwipe!
+g:autoflip_prefer_auto_level = 'conservative'
+
 # The stronger policy fails closed when clangd lacks its AST capability.
 new
 setlocal filetype=cpp

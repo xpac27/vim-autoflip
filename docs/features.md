@@ -7,8 +7,12 @@
   reference bindings, and direct pointer-variable reads.
 - It displays the corresponding `auto`, `auto&`, or `auto*` spelling without
   special-casing containers or project types.
-- Rvalue references, null pointers, calls, conversions, malformed ranges, and
-  ambiguous ASTs fail closed.
+- Direct call results now render as `auto`; top-level const call-result
+  declarations render as `const auto`.
+- A direct call initializer may occupy the line immediately following its
+  declaration; wider multiline parsing remains intentionally unsupported.
+- Rvalue references, null pointers, conversion-wrapped calls, malformed
+  ranges, and ambiguous ASTs fail closed.
 
 ## 2026-08-29 09:50 CEST - Reliable delayed enable
 
