@@ -56,3 +56,20 @@ assert_equal([], actions.Normalize(bufnr(), uri, requested,
 var conflicting = Action(uri, edit_range, 'const auto&')
 assert_equal([], actions.Normalize(bufnr(), uri, requested, [valid, conflicting]))
 bwipe!
+
+new
+setlocal filetype=cpp
+setline(1, [
+  'class Derived {',
+  '  int f() const override',
+  '  {',
+  '    std::vector<int>::iterator it = values.begin();',
+  '  }',
+  '};',
+])
+var qualified_uri = 'file:///tmp/qualified-actions.cpp'
+var qualified_requested = {start: {line: 0, character: 0}, end: {line: 5, character: 2}}
+var qualified_edit_range = LspRange(3, 4, 30)
+assert_equal(1, len(actions.Normalize(bufnr(), qualified_uri, qualified_requested,
+  [Action(qualified_uri, qualified_edit_range, 'auto')])))
+bwipe!

@@ -63,7 +63,8 @@ def BraceKind(segment: string, parent: string): string
   if clean =~# '\<\%(class\|struct\|union\|namespace\|enum\)\>'
     return 'nonlocal'
   endif
-  if clean =~# ')\s*$' || clean =~# ']\s*\%(([^)]*)\)\?\s*$'
+  if clean =~# ')\s*\%(\%(const\|volatile\|&&\|&\|noexcept\|override\|final\)\s*\)*$'
+      || clean =~# ']\s*\%(([^)]*)\)\?\s*$'
     return 'local'
   endif
   return parent ==# 'local' ? 'local' : 'nonlocal'
@@ -119,4 +120,3 @@ export def SafeDeclarationLine(bufnr: number, lnum: number): string
   endif
   return masked
 enddef
-
