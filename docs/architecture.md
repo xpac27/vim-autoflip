@@ -1,5 +1,16 @@
 # Architecture
 
+## 2026-08-31 15:32 CEST - Linear AST candidate preflight
+
+AST-backed prefer-auto candidate discovery uses one masked lexical/scope pass
+from the start of the buffer through the visible range. The resulting
+per-line snapshots feed simple-copy, reference/pointer, direct-call, and
+two-line-call matching without rescanning the file prefix for each candidate.
+
+This keeps the UI-side preflight linear in the scanned source instead of
+quadratic in viewport size and line position. vim-lsp requests remain
+asynchronous; `g:autoflip_max_visible_lines` bounds the synchronous scan.
+
 ## 2026-08-29 09:50 CEST - Eager diagnostic subscription
 
 The plugin entry point initializes the LSP adapter immediately after import.

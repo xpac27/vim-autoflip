@@ -44,11 +44,8 @@ def PlainValueType(type_text: string): bool
   return true
 enddef
 
-export def Candidates(
-    bufnr: number,
-    requested: dict<any>,
-    maximum: number): list<dict<any>>
-  if maximum <= 0 || type(get(requested, 'start', 0)) != v:t_dict
+def CandidateLines(bufnr: number, requested: dict<any>): list<dict<any>>
+  if type(get(requested, 'start', 0)) != v:t_dict
       || type(get(requested, 'end', 0)) != v:t_dict
     return []
   endif
@@ -58,12 +55,13 @@ export def Candidates(
     return []
   endif
   var last = min([info[0].linecount, get(requested.end, 'line', -1) + 1])
-  if last < first
-    return []
-  endif
+  return last < first ? [] : syntax.LocalDeclarationLines(bufnr, first, last)
+enddef
+
+def SimpleCandidates(lines: list<dict<any>>, maximum: number): list<dict<any>>
   var result: list<dict<any>> = []
-  for lnum in range(first, last)
-    var line = syntax.SafeDeclarationLine(bufnr, lnum)
+  for entry in lines
+    var line = get(entry, 'line', '')
     if empty(line)
       continue
     endif
@@ -74,9 +72,10 @@ export def Candidates(
     var type_start = strlen(matched[1])
     var type_end = type_start + strlen(matched[2])
     var semicolon = match(line, ';\s*$')
-    if semicolon < 0 || !syntax.IsLocal(bufnr, lnum, type_start + 1)
+    if semicolon < 0 || !get(entry, 'is_local', false)
       continue
     endif
+    var lnum = get(entry, 'lnum', 0)
     add(result, {
       lnum: lnum,
       identifier: matched[3],
@@ -97,29 +96,27 @@ export def Candidates(
   return result
 enddef
 
+export def Candidates(
+    bufnr: number,
+    requested: dict<any>,
+    maximum: number): list<dict<any>>
+  return maximum <= 0 ? [] : SimpleCandidates(CandidateLines(bufnr, requested), maximum)
+enddef
+
 export def AstProvenCandidates(
     bufnr: number,
     requested: dict<any>,
     maximum: number): list<dict<any>>
-  if maximum <= 0 || type(get(requested, 'start', 0)) != v:t_dict
-      || type(get(requested, 'end', 0)) != v:t_dict
+  if maximum <= 0
     return []
   endif
-  var first = max([1, get(requested.start, 'line', 0) + 1])
-  var info = getbufinfo(bufnr)
-  if empty(info)
-    return []
-  endif
-  var last = min([info[0].linecount, get(requested.end, 'line', -1) + 1])
-  if last < first
-    return []
-  endif
-  var result = Candidates(bufnr, requested, maximum)
+  var lines = CandidateLines(bufnr, requested)
+  var result = SimpleCandidates(lines, maximum)
   if len(result) >= maximum
     return result
   endif
-  for lnum in range(first, last)
-    var line = syntax.SafeDeclarationLine(bufnr, lnum)
+  for entry in lines
+    var line = get(entry, 'line', '')
     if empty(line)
       continue
     endif
@@ -131,9 +128,10 @@ export def AstProvenCandidates(
     var type_end = type_start + strlen(matched[2])
     var declarator_end = type_end + strlen(matched[3])
     var semicolon = match(line, ';\s*$')
-    if semicolon < 0 || !syntax.IsLocal(bufnr, lnum, type_start + 1)
+    if semicolon < 0 || !get(entry, 'is_local', false)
       continue
     endif
+    var lnum = get(entry, 'lnum', 0)
     var initializer = trim(matched[5])
     var initializer_start = match(line, '=\s*\zs')
     if empty(initializer) || initializer_start < 0
@@ -163,11 +161,11 @@ export def AstProvenCandidates(
       break
     endif
   endfor
-  for lnum in range(first, last)
+  for entry in lines
     if len(result) >= maximum
       break
     endif
-    var line = syntax.SafeDeclarationLine(bufnr, lnum)
+    var line = get(entry, 'line', '')
     if empty(line)
       continue
     endif
@@ -185,9 +183,10 @@ export def AstProvenCandidates(
     var type_end = base_type_start + strlen(matched[3])
     var semicolon = match(line, ';\s*$')
     var initializer_start = match(line, '=\s*\zs')
-    if semicolon < 0 || initializer_start < 0 || !syntax.IsLocal(bufnr, lnum, type_start + 1)
+    if semicolon < 0 || initializer_start < 0 || !get(entry, 'is_local', false)
       continue
     endif
+    var lnum = get(entry, 'lnum', 0)
     add(result, {
       lnum: lnum,
       identifier: matched[4],
@@ -212,54 +211,59 @@ export def AstProvenCandidates(
       replacement: empty(matched[2]) ? 'auto' : 'const auto',
     })
   endfor
-  for lnum in range(first, last - 1)
-    if len(result) >= maximum
-      break
-    endif
-    var line = syntax.SafeDeclarationLine(bufnr, lnum)
-    var continuation = syntax.SafeDeclarationLine(bufnr, lnum + 1)
-    var matched = matchlist(line, AST_PROVEN_VALUE_PREFIX)
-    var continued = matchlist(continuation, AST_PROVEN_VALUE_CONTINUATION)
-    if empty(matched) || empty(continued) || !PlainValueType(matched[3])
-      continue
-    endif
-    var initializer = trim(continued[2])
-    if empty(initializer) || initializer =~# '^\h\w*$'
-        || initializer =~# '^\h\w*\s*,'
-      continue
-    endif
-    var type_start = strlen(matched[1])
-    var base_type_start = type_start + strlen(matched[2])
-    var type_end = base_type_start + strlen(matched[3])
-    var semicolon = match(continuation, ';\s*$')
-    var initializer_start = strlen(continued[1])
-    if semicolon < 0 || !syntax.IsLocal(bufnr, lnum, type_start + 1)
-      continue
-    endif
-    add(result, {
-      lnum: lnum,
-      identifier: matched[4],
-      type_range: {
-        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, base_type_start))},
-        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
-      },
-      replacement_range: {
-        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
-        end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
-      },
-      range: {
-        start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
-        end: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, semicolon))},
-      },
-      initializer: initializer,
-      initializer_range: {
-        start: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, initializer_start))},
-        end: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, initializer_start + strlen(initializer)))},
-      },
-      declarator: 'value',
-      replacement: empty(matched[2]) ? 'auto' : 'const auto',
-    })
-  endfor
+  if len(lines) >= 2
+    for index in range(0, len(lines) - 2)
+      if len(result) >= maximum
+        break
+      endif
+      var entry = lines[index]
+      var next = lines[index + 1]
+      var line = get(entry, 'line', '')
+      var continuation = get(next, 'line', '')
+      var matched = matchlist(line, AST_PROVEN_VALUE_PREFIX)
+      var continued = matchlist(continuation, AST_PROVEN_VALUE_CONTINUATION)
+      if empty(matched) || empty(continued) || !PlainValueType(matched[3])
+        continue
+      endif
+      var initializer = trim(continued[2])
+      if empty(initializer) || initializer =~# '^\h\w*$'
+          || initializer =~# '^\h\w*\s*,'
+        continue
+      endif
+      var type_start = strlen(matched[1])
+      var base_type_start = type_start + strlen(matched[2])
+      var type_end = base_type_start + strlen(matched[3])
+      var semicolon = match(continuation, ';\s*$')
+      var initializer_start = strlen(continued[1])
+      if semicolon < 0 || !get(entry, 'is_local', false)
+        continue
+      endif
+      var lnum = get(entry, 'lnum', 0)
+      add(result, {
+        lnum: lnum,
+        identifier: matched[4],
+        type_range: {
+          start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, base_type_start))},
+          end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
+        },
+        replacement_range: {
+          start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
+          end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_end))},
+        },
+        range: {
+          start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
+          end: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, semicolon))},
+        },
+        initializer: initializer,
+        initializer_range: {
+          start: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, initializer_start))},
+          end: {line: lnum, character: rangeutil.Utf16Length(strpart(continuation, 0, initializer_start + strlen(initializer)))},
+        },
+        declarator: 'value',
+        replacement: empty(matched[2]) ? 'auto' : 'const auto',
+      })
+    endfor
+  endif
   return result
 enddef
 

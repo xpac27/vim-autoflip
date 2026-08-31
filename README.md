@@ -195,6 +195,10 @@ let g:autoflip_max_ast_requests = 40
 `g:autoflip_type_name_limit` is fail-closed: a longer clangd label is skipped,
 not cut into a potentially misleading C++ type.
 
+`g:autoflip_max_visible_lines` also bounds the synchronous lexical preflight
+for AST-backed prefer-auto levels. clangd requests themselves remain
+asynchronous.
+
 `g:autoflip_prefer_auto_level` selects one of three policies:
 
 - `conservative` (default) renders only direct clang-tidy

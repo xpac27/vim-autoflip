@@ -1,6 +1,7 @@
 vim9script
 
 import autoload 'autoflip/copies.vim' as copies
+import autoload 'autoflip/syntax.vim' as syntax
 
 def LspRange(line: number, start: number, finish: number): dict<any>
   return {start: {line: line, character: start}, end: {line: line, character: finish}}
@@ -183,6 +184,9 @@ setline(1, [
   'State field = other;',
 ])
 var requested = {start: {line: 0, character: 0}, end: {line: 19, character: 20}}
+var snapshot = syntax.LocalDeclarationLines(bufnr(), 1, line('$'))
+assert_true(get(snapshot[3], 'is_local', false))
+assert_false(get(snapshot[-1], 'is_local', true))
 var candidates = copies.Candidates(bufnr(), requested, 20)
 assert_equal(4, len(candidates))
 assert_equal(['c', 'd', 'converted', 'next'], candidates->mapnew((_, item) => item.identifier))

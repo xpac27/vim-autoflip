@@ -100,6 +100,8 @@ g:autoflip_reveal_under_cursor Boolean. Default: true.
 
                                         *g:autoflip_max_visible_lines*
 g:autoflip_max_visible_lines   Number. Default: 300.
+                      Also bounds synchronous lexical preflight for AST-backed
+                      prefer-auto levels. vim-lsp requests remain asynchronous.
 
                                            *g:autoflip_type_name_limit*
 g:autoflip_type_name_limit     Number. Default: 80. Longer types are skipped.

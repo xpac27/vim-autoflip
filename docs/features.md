@@ -1,5 +1,11 @@
 # Features
 
+## 2026-08-31 15:32 CEST - Responsive AST preflight
+
+- AST-backed candidate discovery now masks and classifies the visible source
+  through one shared linear pass rather than repeatedly rescanning its prefix.
+- Code-action and AST requests remain asynchronous through vim-lsp.
+
 ## 2026-08-31 14:51 CEST - Broader AST-proven locals
 
 - `ast-proven-locals` preserves conservative and `same-type-copies` results,
