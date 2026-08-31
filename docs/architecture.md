@@ -11,6 +11,21 @@ This keeps the UI-side preflight linear in the scanned source instead of
 quadratic in viewport size and line position. vim-lsp requests remain
 asynchronous; `g:autoflip_max_visible_lines` bounds the synchronous scan.
 
+## 2026-08-31 15:49 CEST - Selective edit retention
+
+Core snapshots the complete source line for each rendered TypeView. A buffer
+change preserves only views whose line remains byte-identical at the same line
+number, then immediately rebuilds their display while the debounced request is
+pending. Changed or shifted lines are cleared. Insert-mode reveal remains
+unchanged, and the accepted clangd reply is still authoritative.
+
+## 2026-08-31 15:58 CEST - Diagnostic reply ownership
+
+LSP diagnostic notifications no longer impersonate buffer edits. A
+notification received while a code-action or AST reply is in flight marks a
+follow-up refresh, allowing that reply to complete under its original
+generation. Actual buffer changes still invalidate pending work immediately.
+
 ## 2026-08-29 09:50 CEST - Eager diagnostic subscription
 
 The plugin entry point initializes the LSP adapter immediately after import.

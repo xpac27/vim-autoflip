@@ -8,11 +8,15 @@ def LspRange(line: number, start: number, finish: number): dict<any>
   return {start: {line: line, character: start}, end: {line: line, character: finish}}
 enddef
 
-def ModernizeAction(action_uri: string): dict<any>
+def ModernizeAction(
+    action_uri: string,
+    line: number = 1,
+    start: number = 2,
+    finish: number = 28): dict<any>
   return {
     title: 'use auto',
     diagnostics: [{source: 'clang-tidy', code: 'modernize-use-auto', message: 'use auto'}],
-    edit: {changes: {[action_uri]: [{range: LspRange(1, 2, 28), newText: 'auto'}]}},
+    edit: {changes: {[action_uri]: [{range: LspRange(line, start, finish), newText: 'auto'}]}},
   }
 enddef
 
@@ -44,6 +48,51 @@ core.SetMode('show-deduced-types')
 assert_equal(0, len(core.State().views))
 # The source declaration is explicit, so the mock hint is correctly rejected.
 assert_equal('inlay-hints', g:autoflip_test_lsp.requests[-1].kind)
+core.Disable()
+bwipe!
+
+# A diagnostic update queues a follow-up refresh without invalidating its reply.
+new
+setlocal filetype=cpp
+setline(1, ['void f() {', '  std::vector<int>::iterator it = values.begin();', '}'])
+setlocal nomodified
+g:autoflip_test_lsp.code_actions = [ModernizeAction(uri)]
+g:autoflip_test_lsp.requests = []
+g:autoflip_test_lsp.delay_ms = 20
+var diagnostic_state = core.State()
+diagnostic_state.mode = 'prefer-auto'
+core.Enable()
+var diagnostic_generation = core.State().generation
+core.OnLspEvent()
+assert_equal(diagnostic_generation, core.State().generation)
+assert_true(core.State().refresh_after_reply)
+sleep 60m
+assert_equal(1, len(core.State().views))
+assert_match('stale=0', core.Status())
+core.Disable()
+bwipe!
+g:autoflip_test_lsp.delay_ms = 0
+
+# An edit clears only views whose source line changed while refresh is pending.
+new
+setlocal filetype=cpp
+setline(1, [
+  'void f() {',
+  '  std::vector<int>::iterator first = values.begin();',
+  '  std::vector<int>::iterator second = values.begin();',
+  '}',
+])
+setlocal nomodified
+g:autoflip_test_lsp.code_actions = [ModernizeAction(uri, 1), ModernizeAction(uri, 2)]
+g:autoflip_test_lsp.requests = []
+var retained_state = core.State()
+retained_state.mode = 'prefer-auto'
+core.Enable()
+assert_equal(2, len(core.State().views))
+setline(2, '  int changed = 1;')
+core.OnBufferChanged()
+assert_equal(1, len(core.State().views))
+assert_equal(3, values(core.State().views)[0].lnum)
 core.Disable()
 bwipe!
 

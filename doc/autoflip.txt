@@ -138,6 +138,13 @@ buffer generation and start a debounce timer. A reply is accepted only when
 the buffer still exists, remains enabled in the same mode, and both generation
 and changedtick still match.
 
+While that request is pending, views whose full source line is byte-identical
+at the same line number remain displayed. Edited or shifted lines clear
+immediately.
+
+Diagnostic updates queue a follow-up refresh without invalidating an in-flight
+code-action or AST reply. Actual buffer edits still invalidate stale replies.
+
 Accepted candidates become a shared TypeView, then a renderer places virtual
 text before the source range and a per-window high-priority Conceal match over
 the source. Window-local conceallevel and concealcursor are restored exactly.

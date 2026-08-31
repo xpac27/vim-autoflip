@@ -199,6 +199,13 @@ not cut into a potentially misleading C++ type.
 for AST-backed prefer-auto levels. clangd requests themselves remain
 asynchronous.
 
+After an edit, views on byte-identical source lines remain rendered while the
+debounced request is pending. Views on edited or shifted lines are removed
+immediately and clangd's accepted reply remains authoritative.
+
+Diagnostic updates queue a follow-up refresh without invalidating the
+code-action or AST reply already in flight.
+
 `g:autoflip_prefer_auto_level` selects one of three policies:
 
 - `conservative` (default) renders only direct clang-tidy

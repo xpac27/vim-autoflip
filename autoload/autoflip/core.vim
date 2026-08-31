@@ -20,7 +20,10 @@ def NewState(bufnr: number): dict<any>
     generation: 0,
     changedtick: getbufvar(bufnr, 'changedtick'),
     pending_timer: -1,
+    request_pending: false,
+    refresh_after_reply: false,
     views: {},
+    view_lines: {},
     windows: {},
     revealed: false,
     revealed_view_id: '',
@@ -61,6 +64,24 @@ def StopTimer(state: dict<any>, key: string)
   state[key] = -1
 enddef
 
+def ScheduleRefresh(bufnr: number, state: dict<any>, delay: number)
+  StopTimer(state, 'pending_timer')
+  var generation = state.generation
+  state.pending_timer = timer_start(delay, (_) => DebouncedRefresh(bufnr, generation))
+enddef
+
+def SnapshotViewLines(bufnr: number, state: dict<any>)
+  var view_lines: dict<string> = {}
+  for view in values(state.views)
+    var lnum = get(view, 'lnum', 0)
+    var lines = lnum > 0 ? getbufline(bufnr, lnum) : []
+    if !empty(lines)
+      view_lines[string(lnum)] = lines[0]
+    endif
+  endfor
+  state.view_lines = view_lines
+enddef
+
 export def Enable()
   var bufnr = bufnr('%')
   var state = State(bufnr)
@@ -99,12 +120,15 @@ export def Disable()
   StopTimer(state, 'pending_timer')
   StopTimer(state, 'reveal_timer')
   state.generation += 1
+  state.request_pending = false
+  state.refresh_after_reply = false
   render.Cleanup(bufnr, state)
   state.enabled = false
   state.revealed = false
   state.revealed_view_id = ''
   state.reveal_source = ''
   state.views = {}
+  state.view_lines = {}
   state.status = 'disabled'
 enddef
 
@@ -127,6 +151,7 @@ export def SetMode(mode: string)
   endif
   state.mode = mode
   state.views = {}
+  state.view_lines = {}
   state.revealed = false
   state.revealed_view_id = ''
   state.reveal_source = ''
@@ -151,6 +176,7 @@ export def SetPreferAutoLevel(level: string)
     return
   endif
   state.views = {}
+  state.view_lines = {}
   state.revealed = false
   state.revealed_view_id = ''
   state.reveal_source = ''
@@ -213,6 +239,7 @@ export def Refresh(force: bool = false)
   var changedtick = state.changedtick
   var request_mode = state.mode
   state.status = force ? 'enabled; refresh requested' : 'enabled; request pending'
+  state.request_pending = true
   var Callback = (response) => HandleReply(bufnr, generation, changedtick,
     request_mode, prefer_auto_level, requested, response)
   if request_mode ==# 'prefer-auto'
@@ -271,6 +298,7 @@ def HandleReply(
     add(state.debug, 'discarded stale ' .. request_mode .. ' response')
     return
   endif
+  state.request_pending = false
   if type(response) != v:t_dict || !get(response, 'ok', false)
     state.status = 'error: ' .. get(response, 'error', 'malformed LSP response')
     return
@@ -306,9 +334,14 @@ def HandleReply(
   for view in fresh
     state.views[view.id] = view
   endfor
+  SnapshotViewLines(bufnr, state)
   state.status = printf('enabled; clangd response accepted (%d substitutions%s)', len(fresh),
     ast_errors > 0 ? printf('; %d malformed AST replies skipped', ast_errors) : '')
   render.Render(bufnr, state, values(state.views))
+  if state.refresh_after_reply
+    state.refresh_after_reply = false
+    ScheduleRefresh(bufnr, state, 1)
+  endif
 enddef
 
 def MergeViews(groups: list<list<dict<any>>>): list<dict<any>>
@@ -378,7 +411,24 @@ export def OnBufferChanged()
   endif
   state.generation += 1
   state.changedtick = b:changedtick
-  state.views = {}
+  state.request_pending = false
+  state.refresh_after_reply = false
+  var preserved: dict<any> = {}
+  var preserved_lines: dict<string> = {}
+  var view_lines = get(state, 'view_lines', {})
+  for id in keys(state.views)
+    var view = state.views[id]
+    var lnum = get(view, 'lnum', 0)
+    var key = string(lnum)
+    var lines = lnum > 0 ? getbufline(bufnr('%'), lnum) : []
+    if has_key(view_lines, key) && !empty(lines)
+        && view_lines[key] ==# lines[0]
+      preserved[id] = view
+      preserved_lines[key] = lines[0]
+    endif
+  endfor
+  state.views = preserved
+  state.view_lines = preserved_lines
   if state.reveal_source ==# 'cursor'
     state.revealed = false
     state.revealed_view_id = ''
@@ -386,10 +436,10 @@ export def OnBufferChanged()
   endif
   render.ClearBufferProperties(bufnr('%'))
   render.ClearMatches(state)
-  StopTimer(state, 'pending_timer')
-  var generation = state.generation
-  state.pending_timer = timer_start(get(g:, 'autoflip_debounce_ms', 300),
-    (_) => DebouncedRefresh(bufnr('%'), generation))
+  if state.reveal_source !=# 'insert'
+    render.Render(bufnr('%'), state, values(state.views))
+  endif
+  ScheduleRefresh(bufnr('%'), state, get(g:, 'autoflip_debounce_ms', 300))
 enddef
 
 def DebouncedRefresh(bufnr: number, generation: number)
@@ -472,7 +522,11 @@ enddef
 export def OnLspEvent()
   var state = get(b:, 'autoflip_state', {})
   if !empty(state) && state.enabled
-    OnBufferChanged()
+    if state.request_pending
+      state.refresh_after_reply = true
+    else
+      ScheduleRefresh(bufnr('%'), state, 1)
+    endif
   endif
 enddef
 

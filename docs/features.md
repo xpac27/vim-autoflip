@@ -1,5 +1,17 @@
 # Features
 
+## 2026-08-31 15:58 CEST - Reliable diagnostic refresh
+
+- Diagnostic updates queue a follow-up request without discarding the
+  code-action or AST response that is already in flight.
+- Actual edits continue to invalidate stale requests immediately.
+
+## 2026-08-31 15:49 CEST - Selective edit retention
+
+- Editing one substitution no longer clears byte-identical substitutions on
+  other lines while AutoFlip waits for a refreshed clangd reply.
+- Edited or shifted lines clear immediately; insert-mode reveal remains intact.
+
 ## 2026-08-31 15:32 CEST - Responsive AST preflight
 
 - AST-backed candidate discovery now masks and classifies the visible source
