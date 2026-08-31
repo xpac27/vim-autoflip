@@ -1,5 +1,15 @@
 # Features
 
+## 2026-08-31 14:51 CEST - Broader AST-proven locals
+
+- `ast-proven-locals` preserves conservative and `same-type-copies` results,
+  then adds exact clangd AST proof for direct class copies, lvalue subscript
+  reference bindings, and direct pointer-variable reads.
+- It displays the corresponding `auto`, `auto&`, or `auto*` spelling without
+  special-casing containers or project types.
+- Rvalue references, null pointers, calls, conversions, malformed ranges, and
+  ambiguous ASTs fail closed.
+
 ## 2026-08-29 09:50 CEST - Reliable delayed enable
 
 - AutoFlip registers for vim-lsp notifications during plugin load, before a

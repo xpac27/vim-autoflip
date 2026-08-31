@@ -91,6 +91,45 @@ assert_equal('code-actions', g:autoflip_test_lsp.requests[-1].kind)
 core.Disable()
 bwipe!
 
+# The broadest policy requests and renders an AST-proven lvalue subscript reference.
+new
+setlocal filetype=cpp
+setline(1, ['void references() {', '  Value& reference = values[index];', '}'])
+setlocal nomodified
+var reference_requested = {start: {line: 0, character: 0}, end: {line: 2, character: 1}}
+var reference_candidate = copies.AstProvenCandidates(bufnr(), reference_requested, 10)[0]
+var reference_ast = {
+  role: 'declaration',
+  kind: 'Var',
+  detail: 'reference',
+  range: reference_candidate.range,
+  children: [
+    {role: 'type', kind: 'LValueReference', range: reference_candidate.type_range},
+    {
+      role: 'expression',
+      kind: 'CXXOperatorCall',
+      arcana: "CXXOperatorCallExpr 'Value' lvalue '[]'",
+      range: reference_candidate.initializer_range,
+    },
+  ],
+}
+g:autoflip_test_lsp.code_actions = []
+g:autoflip_test_lsp.ast_responses = [{candidate: reference_candidate, node: reference_ast}]
+g:autoflip_test_lsp.requests = []
+g:autoflip_prefer_auto_level = 'ast-proven-locals'
+var reference_state = core.State()
+reference_state.mode = 'prefer-auto'
+core.Enable()
+assert_equal(1, len(core.State().views))
+assert_equal('auto&', values(core.State().views)[0].replacement)
+assert_equal(['code-actions', 'asts'],
+  g:autoflip_test_lsp.requests->mapnew((_, request) => request.kind))
+assert_equal('reference', g:autoflip_test_lsp.requests[1].candidates[0].identifier)
+assert_false(&modified)
+core.Disable()
+bwipe!
+g:autoflip_prefer_auto_level = 'conservative'
+
 # The stronger policy fails closed when clangd lacks its AST capability.
 new
 setlocal filetype=cpp

@@ -4,8 +4,8 @@ AutoFlip is a display-only C++ type viewer for current Vim 9.x. It has two
 modes:
 
 - `prefer-auto` displays a safe `auto` spelling over an explicit local-variable
-  type. Its default level uses clang-tidy `modernize-use-auto`; an opt-in level
-  also accepts simple same-type copies proven by clangd's structured AST.
+  type. Its default level uses clang-tidy `modernize-use-auto`; opt-in levels
+  also accept increasingly broad clangd AST-proven local declarations.
 - `show-deduced-types` displays clangd's inferred type over the source `auto`
   spelling.
 
@@ -158,6 +158,7 @@ AutoFlip is opt-in. Open a supported C++ file and run:
 :AutoFlipEnable
 :AutoFlipMode prefer-auto
 :AutoFlipPreferAutoLevel same-type-copies
+:AutoFlipPreferAutoLevel ast-proven-locals
 :AutoFlipMode show-deduced-types
 :AutoFlipRefresh
 :AutoFlipReveal
@@ -194,7 +195,7 @@ let g:autoflip_max_ast_requests = 40
 `g:autoflip_type_name_limit` is fail-closed: a longer clangd label is skipped,
 not cut into a potentially misleading C++ type.
 
-`g:autoflip_prefer_auto_level` selects one of two policies:
+`g:autoflip_prefer_auto_level` selects one of three policies:
 
 - `conservative` (default) renders only direct clang-tidy
   `modernize-use-auto` code actions.
@@ -203,6 +204,13 @@ not cut into a potentially misleading C++ type.
   declarations. It renders only when clangd reports a plain variable, the
   exact type range, and an initializer whose only implicit operation is
   `LValueToRValue`.
+- `ast-proven-locals` includes both preceding policies and also accepts:
+  - `Type target = source;` when clangd reports direct copy construction with
+    a single no-op conversion of `source`;
+  - `Type& target = object[index];` when clangd reports an lvalue `operator[]`
+    expression; and
+  - `Type* target = source;` when clangd reports a direct pointer-variable
+    read.
 
 For example, the stronger level can display both declarations as `auto`:
 
@@ -211,10 +219,11 @@ State c = a;
 Transition d = b;
 ```
 
-Use `:AutoFlipPreferAutoLevel conservative` or
-`:AutoFlipPreferAutoLevel same-type-copies` to switch at runtime. The latter
-uses at most `g:autoflip_max_ast_requests` AST requests per refresh; zero
-disables its additional candidates while preserving clang-tidy results.
+Use `:AutoFlipPreferAutoLevel conservative`,
+`:AutoFlipPreferAutoLevel same-type-copies`, or
+`:AutoFlipPreferAutoLevel ast-proven-locals` to switch at runtime. The AST
+levels use at most `g:autoflip_max_ast_requests` requests per refresh; zero
+disables their additional candidates while preserving clang-tidy results.
 
 ## Troubleshooting
 
@@ -251,6 +260,10 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
   `Type target = source;` locals without cv/ref/pointer spelling. Qualifiers,
   references, calls, constructors, casts, conversions, macros, and ambiguous
   AST shapes are skipped.
+- `ast-proven-locals` additionally recognizes only single `&` or `*`
+  declarators without cv qualifiers. It accepts only the exact AST shapes
+  documented above; rvalue references, null pointers, general calls, casts,
+  conversions, multi-declarators, macros, and ambiguous AST nodes are skipped.
 - `show-deduced-types` currently accepts simple `auto name = ...`
   declarations. Direct-list initialization, function returns, parameters,
   fields, aliases, structured bindings, macros, and ambiguous declarations are

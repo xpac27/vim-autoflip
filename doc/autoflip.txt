@@ -18,8 +18,8 @@ AutoFlip displays two visual-only C++ type transformations:
 
   prefer-auto
       Conceal an explicit local-variable type. The conservative level displays
-      replacements from clang-tidy modernize-use-auto code actions. An opt-in
-      level also accepts simple same-type copies proven by clangd's AST.
+      replacements from clang-tidy modernize-use-auto code actions. Opt-in
+      levels also accept progressively broader clangd AST-proven locals.
 
   show-deduced-types
       Conceal a simple auto declaration prefix and display the full inferred
@@ -66,8 +66,9 @@ COMMANDS                                                       *autoflip-command
 
                                             *:AutoFlipPreferAutoLevel*
 :AutoFlipPreferAutoLevel {level}
-                      Select conservative or same-type-copies and refresh the
-                      current prefer-auto buffer.
+                      Select conservative, same-type-copies, or
+                      ast-proven-locals and refresh the current prefer-auto
+                      buffer.
 
                                                     *:AutoFlipRefresh*
 :AutoFlipRefresh      Force a new visible-range request.
@@ -109,6 +110,10 @@ g:autoflip_prefer_auto_level   String. Default: "conservative".
                       "same-type-copies" adds clangd AST-proven declarations
                       shaped as a local Type target = source without cv/ref or
                       pointer spelling.
+                      "ast-proven-locals" retains those results and accepts
+                      direct class copies, lvalue Type& target = object[index]
+                      bindings, and direct Type* target = source reads when
+                      clangd reports their exact AST shapes.
 
                                     *g:autoflip_max_ast_requests*
 g:autoflip_max_ast_requests    Number. Default: 40. Maximum additional AST
@@ -149,6 +154,13 @@ LValueToRValue ImplicitCast over a DeclRef. Every other shape is skipped. Both
 this result and normal clang-tidy actions pass through TypeView validation and
 rendering without changing the buffer.
 
+The ast-proven-locals level also scans non-cv, single-declarator Type& and
+Type* declarations. It accepts only a direct class copy construction, an
+lvalue operator[] call for a reference binding, or a direct pointer-variable
+read. Exact declaration, type, and initializer ranges are always required.
+PCClangd exposes the lvalue category of overloaded operator[] in its AST
+extension arcana field; AutoFlip uses that field only for this proof.
+
 ===============================================================================
 TROUBLESHOOTING                                         *autoflip-troubleshooting*
 
@@ -161,8 +173,9 @@ Ensure compile_commands.json is accurate. AutoFlip never manufactures flags.
 Set g:lsp_log_file and g:lsp_log_verbose to inspect vim-lsp traffic. Keep
 g:lsp_inlay_hints_enabled at 0 if duplicated hints appear.
 
-The same-type-copies level requires clangd to advertise astProvider. Select
-the conservative level when using an older or incompatible server.
+The same-type-copies and ast-proven-locals levels require clangd to advertise
+astProvider. Select the conservative level when using an older or incompatible
+server.
 
 ===============================================================================
 LIMITATIONS                                                 *autoflip-limitations*
@@ -171,8 +184,11 @@ Conservative prefer-auto supports only direct one-edit modernize-use-auto
 WorkspaceEdits. same-type-copies additionally supports one-line,
 single-declarator Type target = source locals without cv/ref/pointer spelling
 when clangd's AST proves no conversion beyond LValueToRValue. Qualifiers,
-pointers, references, calls,
-constructors, casts, conversions, and ambiguous AST nodes are skipped.
+pointers, references, calls, constructors, casts, conversions, and ambiguous
+AST nodes are skipped at that level. ast-proven-locals additionally accepts
+only single & or * declarators with the exact documented AST proof. Rvalue
+references, null pointers, general calls, conversions, macros, multi-
+declarators, and ambiguous AST nodes are skipped.
 
 show-deduced-types supports simple initialized local auto declarations.
 Command actions, multi-file edits, fields, aliases, function returns,

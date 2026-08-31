@@ -35,6 +35,82 @@ def CopyAst(
   }
 enddef
 
+def Candidate(items: list<dict<any>>, identifier: string): dict<any>
+  var found = items->copy()->filter((_, item) => item.identifier ==# identifier)
+  return len(found) == 1 ? found[0] : {}
+enddef
+
+def CandidateExpressionRange(candidate: dict<any>): dict<any>
+  var line = getline(candidate.lnum)
+  var start = match(line, '=\s*\zs')
+  var finish = start + strlen(candidate.initializer)
+  return LspRange(candidate.lnum - 1, start, finish)
+enddef
+
+def ConstructAst(candidate: dict<any>): dict<any>
+  var expression = CandidateExpressionRange(candidate)
+  return {
+    role: 'declaration',
+    kind: 'Var',
+    detail: candidate.identifier,
+    range: candidate.range,
+    children: [
+      {role: 'type', kind: 'Record', detail: 'Container', range: candidate.type_range},
+      {
+        role: 'expression',
+        kind: 'CXXConstruct',
+        range: expression,
+        children: [{
+          role: 'expression',
+          kind: 'ImplicitCast',
+          detail: 'NoOp',
+          range: expression,
+          children: [{role: 'expression', kind: 'DeclRef', detail: candidate.initializer,
+            range: expression}],
+        }],
+      },
+    ],
+  }
+enddef
+
+def ReferenceSubscriptAst(candidate: dict<any>, lvalue: bool = true): dict<any>
+  return {
+    role: 'declaration',
+    kind: 'Var',
+    detail: candidate.identifier,
+    range: candidate.range,
+    children: [
+      {role: 'type', kind: 'LValueReference', range: candidate.type_range},
+      {
+        role: 'expression',
+        kind: 'CXXOperatorCall',
+        arcana: lvalue ? "CXXOperatorCallExpr 'Value' lvalue '[]'" : "CXXOperatorCallExpr 'Value' '[]'",
+        range: candidate.initializer_range,
+      },
+    ],
+  }
+enddef
+
+def PointerAst(candidate: dict<any>): dict<any>
+  return {
+    role: 'declaration',
+    kind: 'Var',
+    detail: candidate.identifier,
+    range: candidate.range,
+    children: [
+      {role: 'type', kind: 'Pointer', detail: 'Value *', range: candidate.type_range},
+      {
+        role: 'expression',
+        kind: 'ImplicitCast',
+        detail: 'LValueToRValue',
+        range: candidate.initializer_range,
+        children: [{role: 'expression', kind: 'DeclRef', detail: candidate.initializer,
+          range: candidate.initializer_range}],
+      },
+    ],
+  }
+enddef
+
 new
 setlocal filetype=cpp
 setline(1, [
@@ -47,14 +123,20 @@ setline(1, [
   '    const State fixed = a;',
   '    State made = factory();',
   '    State one = a, two = b;',
+  '    Container next = current;',
+  '    Value& reference = values[index];',
+  '    Value* pointer = source;',
+  '    Value& returned = factory();',
+  '    Value* null = nullptr;',
+  '    Value&& rvalue = values[index];',
   '  }',
   '};',
   'State field = other;',
 ])
 var requested = {start: {line: 0, character: 0}, end: {line: 11, character: 20}}
 var candidates = copies.Candidates(bufnr(), requested, 20)
-assert_equal(3, len(candidates))
-assert_equal(['c', 'd', 'converted'], candidates->mapnew((_, item) => item.identifier))
+assert_equal(4, len(candidates))
+assert_equal(['c', 'd', 'converted', 'next'], candidates->mapnew((_, item) => item.identifier))
 assert_equal(LspRange(3, 4, 15), candidates[0].range)
 assert_equal(LspRange(3, 4, 9), candidates[0].type_range)
 
@@ -85,4 +167,31 @@ assert_equal({}, copies.Validate(bufnr(), candidates[0], call))
 
 assert_equal(1, len(copies.Candidates(bufnr(), requested, 1)))
 assert_equal([], copies.Candidates(bufnr(), requested, 0))
+
+var ast_proven = copies.AstProvenCandidates(bufnr(), requested, 20)
+assert_equal(['c', 'd', 'converted', 'next', 'reference', 'pointer'],
+  ast_proven->mapnew((_, item) => item.identifier))
+var next = Candidate(ast_proven, 'next')
+var reference = Candidate(ast_proven, 'reference')
+var pointer = Candidate(ast_proven, 'pointer')
+assert_equal({}, Candidate(ast_proven, 'rvalue'))
+assert_equal('auto&', reference.replacement)
+assert_equal('auto*', pointer.replacement)
+
+var ast_proven_views = copies.NormalizeAstProven(bufnr(), [
+  {candidate: next, node: ConstructAst(next)},
+  {candidate: reference, node: ReferenceSubscriptAst(reference)},
+  {candidate: pointer, node: PointerAst(pointer)},
+])
+assert_equal(['auto', 'auto&', 'auto*'],
+  ast_proven_views->mapnew((_, view) => view.replacement))
+
+assert_equal({}, copies.ValidateAstProven(bufnr(), reference, ReferenceSubscriptAst(reference, false)))
+var call_ast = ReferenceSubscriptAst(reference)
+call_ast.children[1].kind = 'Call'
+assert_equal({}, copies.ValidateAstProven(bufnr(), reference, call_ast))
+var null_ast = PointerAst(pointer)
+null_ast.children[1].kind = 'ImplicitCast'
+null_ast.children[1].detail = 'NullToPointer'
+assert_equal({}, copies.ValidateAstProven(bufnr(), pointer, null_ast))
 bwipe!
