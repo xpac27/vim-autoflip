@@ -220,8 +220,10 @@ code-action or AST reply already in flight.
     a single no-op conversion of `source`;
   - `Type& target = object[index];` when clangd reports an lvalue `operator[]`
     expression; and
-  - `Type* target = source;` when clangd reports a direct pointer-variable
-    read.
+  - `Type* target = source;` and `const Type* target = source;` when clangd
+    reports a direct pointer-variable read.
+  - Pointer call results with the same `auto*` or `const auto*` spelling when
+    clangd reports an unwrapped direct call.
   - `Type target = call(...);` and `const Type target = call(...);` when
     clangd reports an unwrapped direct call result, rendered as `auto` and
     `const auto` respectively.
@@ -276,8 +278,8 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
   `Type target = source;` locals without cv/ref/pointer spelling. Qualifiers,
   references, calls, constructors, casts, conversions, macros, and ambiguous
   AST shapes are skipped.
-- `ast-proven-locals` additionally recognizes only single `&` or `*`
-  declarators without cv qualifiers, plus non-cv or top-level `const` value
+- `ast-proven-locals` additionally recognizes single `&` or `*` declarators
+  with an optional leading `const`, plus non-cv or top-level `const` value
   declarations initialized by direct calls. It accepts only the exact AST
   shapes documented above, with at most one adjacent call-only continuation
   line; rvalue references, null pointers, conversion-wrapped calls, casts,

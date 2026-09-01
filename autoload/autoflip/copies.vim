@@ -5,7 +5,7 @@ import autoload 'autoflip/syntax.vim' as syntax
 import autoload 'autoflip/types.vim' as types
 
 const SIMPLE_COPY = '^\(\s*\)\([_a-zA-Z][_a-zA-Z0-9:<> ]*\)\s\+\(\h\w*\)\s*=\s*\(\h\w*\)\s*;\s*$'
-const AST_PROVEN_LOCAL = '^\(\s*\)\([_a-zA-Z][_a-zA-Z0-9:<> ]*\)\s*\(\*\|&\)\s*\(\h\w*\)\s*=\s*\([^;]\+\)\s*;\s*$'
+const AST_PROVEN_LOCAL = '^\(\s*\)\(const\s\+\)\?\(\%(\h\|::\)[_a-zA-Z0-9:<> ]*\)\s*\(\*\|&\)\s*\(\h\w*\)\s*=\s*\([^;]\+\)\s*;\s*$'
 const AST_PROVEN_VALUE = '^\(\s*\)\(const\s\+\)\?\(\%(\h\|::\)[_a-zA-Z0-9:<> ]*\)\s\+\(\h\w*\)\s*=\s*\([^;]\+\)\s*;\s*$'
 const AST_PROVEN_VALUE_PREFIX = '^\(\s*\)\(const\s\+\)\?\(\%(\h\|::\)[_a-zA-Z0-9:<> ]*\)\s\+\(\h\w*\)\s*=\s*$'
 const AST_PROVEN_VALUE_CONTINUATION = '^\(\s*\)\([^;]\+\)\s*;\s*$'
@@ -121,26 +121,29 @@ export def AstProvenCandidates(
       continue
     endif
     var matched = matchlist(line, AST_PROVEN_LOCAL)
-    if empty(matched) || !PlainType(matched[2])
+    if empty(matched) || !PlainValueType(matched[3])
       continue
     endif
     var type_start = strlen(matched[1])
-    var type_end = type_start + strlen(matched[2])
-    var declarator_end = type_end + strlen(matched[3])
+    var type_end = type_start + strlen(matched[2]) + strlen(matched[3])
+    var declarator_end = type_end + strlen(matched[4])
     var semicolon = match(line, ';\s*$')
     if semicolon < 0 || !get(entry, 'is_local', false)
       continue
     endif
     var lnum = get(entry, 'lnum', 0)
-    var initializer = trim(matched[5])
+    var initializer = trim(matched[6])
     var initializer_start = match(line, '=\s*\zs')
     if empty(initializer) || initializer_start < 0
       continue
     endif
-    var replacement = matched[3] ==# '*' ? 'auto*' : 'auto&'
+    var replacement = matched[4] ==# '*' ? 'auto*' : 'auto&'
+    if !empty(matched[2])
+      replacement = 'const ' .. replacement
+    endif
     add(result, {
       lnum: lnum,
-      identifier: matched[4],
+      identifier: matched[5],
       type_range: {
         start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, type_start))},
         end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, declarator_end))},
@@ -154,7 +157,7 @@ export def AstProvenCandidates(
         start: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, initializer_start))},
         end: {line: lnum - 1, character: rangeutil.Utf16Length(strpart(line, 0, initializer_start + strlen(initializer)))},
       },
-      declarator: matched[3],
+      declarator: matched[4],
       replacement: replacement,
     })
     if len(result) >= maximum
@@ -400,7 +403,12 @@ def ValidatePointer(bufnr: number, candidate: dict<any>, node: dict<any>): dict<
   if !ValidType(candidate, type_node)
       || get(type_node, 'kind', '') !=# 'Pointer'
       || empty(expression)
-      || get(expression, 'kind', '') !=# 'ImplicitCast'
+    return {}
+  endif
+  if DirectCall(expression, get(candidate, 'initializer_range', 0))
+    return NewAstProvenView(bufnr, candidate, type_node)
+  endif
+  if get(expression, 'kind', '') !=# 'ImplicitCast'
       || get(expression, 'detail', '') !=# 'LValueToRValue'
     return {}
   endif

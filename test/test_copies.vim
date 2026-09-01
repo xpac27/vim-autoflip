@@ -112,6 +112,19 @@ def PointerAst(candidate: dict<any>): dict<any>
   }
 enddef
 
+def PointerCallAst(candidate: dict<any>): dict<any>
+  return {
+    role: 'declaration',
+    kind: 'Var',
+    detail: candidate.identifier,
+    range: candidate.range,
+    children: [
+      {role: 'type', kind: 'Pointer', detail: 'const Value *', range: candidate.type_range},
+      {role: 'expression', kind: 'CXXMemberCall', range: candidate.initializer_range},
+    ],
+  }
+enddef
+
 def CallAst(candidate: dict<any>): dict<any>
   var type_kind = candidate.replacement ==# 'const auto' ? 'Qualified' : 'Typedef'
   var type_detail = candidate.replacement ==# 'const auto' ? 'const' : 'Count'
@@ -179,11 +192,13 @@ setline(1, [
   '    Count generated = makeCount();',
   '    const Holder held =',
   '      factory.makeHolder();',
+  '    const Value& constReference = values[index];',
+  '    const Value* constPointer = factory.getPointer();',
   '  }',
   '};',
   'State field = other;',
 ])
-var requested = {start: {line: 0, character: 0}, end: {line: 19, character: 20}}
+var requested = {start: {line: 0, character: 0}, end: {line: 21, character: 20}}
 var snapshot = syntax.LocalDeclarationLines(bufnr(), 1, line('$'))
 assert_true(get(snapshot[3], 'is_local', false))
 assert_false(get(snapshot[-1], 'is_local', true))
@@ -222,7 +237,7 @@ assert_equal(1, len(copies.Candidates(bufnr(), requested, 1)))
 assert_equal([], copies.Candidates(bufnr(), requested, 0))
 
 var ast_proven = copies.AstProvenCandidates(bufnr(), requested, 20)
-assert_equal(['c', 'd', 'converted', 'next', 'reference', 'pointer', 'returned', 'null', 'made', 'hash', 'generated', 'held'],
+assert_equal(['c', 'd', 'converted', 'next', 'reference', 'pointer', 'returned', 'null', 'constReference', 'constPointer', 'made', 'hash', 'generated', 'held'],
   ast_proven->mapnew((_, item) => item.identifier))
 var next = Candidate(ast_proven, 'next')
 var reference = Candidate(ast_proven, 'reference')
@@ -230,12 +245,16 @@ var pointer = Candidate(ast_proven, 'pointer')
 var hash = Candidate(ast_proven, 'hash')
 var generated = Candidate(ast_proven, 'generated')
 var held = Candidate(ast_proven, 'held')
+var const_reference = Candidate(ast_proven, 'constReference')
+var const_pointer = Candidate(ast_proven, 'constPointer')
 assert_equal({}, Candidate(ast_proven, 'rvalue'))
 assert_equal('auto&', reference.replacement)
 assert_equal('auto*', pointer.replacement)
 assert_equal('const auto', hash.replacement)
 assert_equal('auto', generated.replacement)
 assert_equal('const auto', held.replacement)
+assert_equal('const auto&', const_reference.replacement)
+assert_equal('const auto*', const_pointer.replacement)
 
 var ast_proven_views = copies.NormalizeAstProven(bufnr(), [
   {candidate: next, node: ConstructAst(next)},
@@ -255,6 +274,10 @@ var null_ast = PointerAst(pointer)
 null_ast.children[1].kind = 'ImplicitCast'
 null_ast.children[1].detail = 'NullToPointer'
 assert_equal({}, copies.ValidateAstProven(bufnr(), pointer, null_ast))
+assert_equal('const auto&', copies.ValidateAstProven(bufnr(), const_reference,
+  ReferenceSubscriptAst(const_reference)).replacement)
+assert_equal('const auto*', copies.ValidateAstProven(bufnr(), const_pointer,
+  PointerCallAst(const_pointer)).replacement)
 var conversion_call = CallAst(hash)
 conversion_call.children[1].kind = 'ImplicitCast'
 conversion_call.children[1].detail = 'ConstructorConversion'

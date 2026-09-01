@@ -115,7 +115,8 @@ g:autoflip_prefer_auto_level   String. Default: "conservative".
                       "ast-proven-locals" retains those results and accepts
                       direct class copies, lvalue Type& target = object[index]
                       bindings, and direct Type* target = source reads when
-                      clangd reports their exact AST shapes.
+                      clangd reports their exact AST shapes. A leading const
+                      qualifier is retained as const auto&, or const auto*.
                       Direct call results are also supported and retain a
                       top-level const spelling as const auto.
 

@@ -27,6 +27,8 @@
   special-casing containers or project types.
 - Direct call results now render as `auto`; top-level const call-result
   declarations render as `const auto`.
+- Pointer call results and const lvalue-subscript references render as
+  `auto*`/`const auto*` and `const auto&`.
 - A direct call initializer may occupy the line immediately following its
   declaration; wider multiline parsing remains intentionally unsupported.
 - Rvalue references, null pointers, conversion-wrapped calls, malformed

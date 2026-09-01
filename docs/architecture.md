@@ -70,7 +70,7 @@ then adds four exact PCClangd AST shapes: direct class copy construction
 `CXXOperatorCall` `[]` bindings to a single `&` declaration, and direct
 pointer-variable reads, and unwrapped `Call`/`CXXMemberCall` value results.
 The corresponding displayed spellings are `auto`, `auto&`, `auto*`, and
-`const auto` for a top-level const value.
+`const auto`, `const auto&`, or `const auto*` for a leading const qualifier.
 
 The scanner remains a bounded nomination mechanism and supports only one-line,
 single-declarator, non-cv declarations, plus a direct-call initializer on the
