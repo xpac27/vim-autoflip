@@ -1,5 +1,13 @@
 # vim-lsp integration details
 
+## 2026-09-03 08:26 CEST - Best-effort AST requests
+
+The best-effort policy checks `astProvider`, sends one bounded
+`textDocument/ast` request per lexical candidate, and joins those replies with
+the normal code-action response. Each reply retains its originating candidate
+so out-of-order responses remain safe. Malformed replies are counted and
+skipped; no request changes the server document.
+
 ## 2026-08-29 09:50 CEST - Diagnostic subscription timing
 
 `modernize-use-auto` quick fixes are matched through the diagnostics supplied

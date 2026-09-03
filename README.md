@@ -158,6 +158,7 @@ AutoFlip is opt-in. Open a supported C++ file and run:
 :AutoFlipEnable
 :AutoFlipMode prefer-auto
 :AutoFlipPreferAutoLevel clang-tidy
+:AutoFlipPreferAutoLevel best-effort
 :AutoFlipMode show-deduced-types
 :AutoFlipRefresh
 :AutoFlipReveal
@@ -188,6 +189,7 @@ let g:autoflip_reveal_under_cursor = v:true
 let g:autoflip_max_visible_lines = 300
 let g:autoflip_type_name_limit = 80
 let g:autoflip_prefer_auto_level = 'clang-tidy'
+let g:autoflip_max_ast_requests = 40
 ```
 
 `g:autoflip_type_name_limit` is fail-closed: a longer clangd label is skipped,
@@ -200,11 +202,18 @@ immediately and clangd's accepted reply remains authoritative.
 Diagnostic updates queue a follow-up refresh without invalidating the LSP reply
 already in flight.
 
-`g:autoflip_prefer_auto_level` currently accepts one policy:
+`g:autoflip_prefer_auto_level` selects one of two policies:
 
 - `clang-tidy` (default) renders only direct clang-tidy
   `modernize-use-auto` code actions.
+- `best-effort` retains clang-tidy results and additionally scans the bounded
+  visible range for simple local `Type [*|&] name = initializer;` declarations.
+  The initializer may continue onto later visible lines. Each nomination must
+  pass exact clangd AST declaration/range checks, compatible canonical-type
+  checks, and a conversion-free expression check before rendering.
 
+`g:autoflip_max_ast_requests` bounds best-effort AST requests per refresh; zero
+disables its additional substitutions while retaining clang-tidy results.
 ## Troubleshooting
 
 Start with `:AutoFlipStatus`.
@@ -215,6 +224,8 @@ Start with `:AutoFlipStatus`.
 - `does not advertise code actions`: update/configure clangd and vim-lsp.
 - `does not advertise inlay hints`: use a current clangd with standard
   `inlayHintProvider` support.
+- `does not advertise AST support`: `best-effort` requires clangd's
+  `astProvider` protocol extension; use `clang-tidy` with an older server.
 - `0 substitutions`: inspect clangd diagnostics, `.clangd`, the compilation
   database, and the conservative limitations below. This is not an error.
 - duplicated inlay hints: disable vim-lsp's renderer with
@@ -233,6 +244,11 @@ let g:lsp_log_file = '/tmp/vim-lsp.log'
   simple initialized local variables are targeted.
 - Conservative `prefer-auto` accepts direct, single-edit `WorkspaceEdit` code
   actions only. Command-backed or multi-file fixes are ignored.
+- `best-effort` accepts only simple initialized local declarations with an
+  optional leading `const` and one `*` or `&` declarator. It skips rvalue
+  references, declarations without a terminating visible `;`, macros,
+  multi-declarators, implicit conversions, incompatible AST ranges/types, and
+  unknown expression shapes.
 - `show-deduced-types` currently accepts simple `auto name = ...`
   declarations. Direct-list initialization, function returns, parameters,
   fields, aliases, structured bindings, macros, and ambiguous declarations are

@@ -17,8 +17,12 @@
 
 ## 2026-09-03 08:26 CEST - Prefer-auto policy
 
-- **clang-tidy**: the default and currently sole prefer-auto policy, authorized
+- **clang-tidy**: the default prefer-auto policy, authorized
   exclusively by a direct clang-tidy `modernize-use-auto` code action.
+- **best-effort**: an opt-in prefer-auto policy that sends bounded,
+  regex-nominated declarations to clangd's AST extension and renders only
+  conversion-free, range- and type-compatible results.
+- **AST candidate**: a lexical nomination with no authority of its own.
 
 ## 2026-08-28 19:41 CEST - Reveal ownership
 

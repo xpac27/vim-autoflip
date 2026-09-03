@@ -1,6 +1,7 @@
 vim9script
 
 import autoload 'autoflip/core.vim' as core
+import autoload 'autoflip/best_effort.vim' as best_effort
 import autoload 'autoflip/lsp.vim' as lsp
 
 def LspRange(line: number, start: number, finish: number): dict<any>
@@ -94,6 +95,46 @@ assert_equal(1, len(core.State().views))
 assert_equal(3, values(core.State().views)[0].lnum)
 core.Disable()
 bwipe!
+
+# The best-effort policy joins clang-tidy and generic clangd AST results.
+new
+setlocal filetype=cpp
+setline(1, ['void best_effort() {', '  const Value* pointer = factory.getPointer();', '}'])
+setlocal nomodified
+var best_effort_requested = {start: {line: 0, character: 0}, end: {line: 2, character: 1}}
+var pointer_candidate = best_effort.Candidates(bufnr(), best_effort_requested, 10)[0]
+var pointer_ast = {
+  role: 'declaration',
+  kind: 'Var',
+  detail: 'pointer',
+  range: pointer_candidate.range,
+  children: [
+    {role: 'type', kind: 'Pointer', range: pointer_candidate.semantic_type_range,
+      arcana: "QualType 'const Value *'"},
+    {role: 'expression', kind: 'CXXMemberCall', range: pointer_candidate.initializer_range,
+      arcana: "CXXMemberCallExpr 'const Value *'"},
+  ],
+}
+g:autoflip_test_lsp.code_actions = [ModernizeAction(uri, 1, 8, 13)]
+g:autoflip_test_lsp.ast_responses = [{candidate: pointer_candidate, node: pointer_ast}]
+g:autoflip_test_lsp.requests = []
+g:autoflip_test_lsp.supports_ast = true
+g:autoflip_prefer_auto_level = 'best-effort'
+var best_effort_state = core.State()
+best_effort_state.mode = 'prefer-auto'
+core.Enable()
+assert_equal(1, len(core.State().views))
+var pointer_view = values(core.State().views)[0]
+assert_equal(2, pointer_view.lnum)
+assert_equal(9, pointer_view.col)
+assert_equal(5, pointer_view.length)
+assert_equal('auto', pointer_view.replacement)
+assert_equal(['code-actions', 'asts'],
+  g:autoflip_test_lsp.requests->mapnew((_, request) => request.kind))
+assert_false(&modified)
+core.Disable()
+bwipe!
+g:autoflip_prefer_auto_level = 'clang-tidy'
 
 new
 setlocal filetype=cpp

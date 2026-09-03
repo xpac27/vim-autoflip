@@ -1,5 +1,15 @@
 # Features
 
+## 2026-09-03 08:26 CEST - Generic best-effort prefer-auto
+
+- `prefer-auto` now has two policies: default `clang-tidy` and opt-in
+  `best-effort`.
+- Best-effort nominates simple local declarations around `=`, including
+  whitespace, optional `const`, one pointer/reference declarator, and
+  multiline initializers through a visible semicolon.
+- clangd AST ranges, canonical types, and conversion-free expression shapes
+  remain mandatory; the scanner never supplies semantic authority.
+
 ## 2026-08-31 15:58 CEST - Reliable diagnostic refresh
 
 - Diagnostic updates queue a follow-up request without discarding the

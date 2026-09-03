@@ -13,6 +13,7 @@ g:autoflip_reveal_under_cursor = get(g:, 'autoflip_reveal_under_cursor', true)
 g:autoflip_max_visible_lines = get(g:, 'autoflip_max_visible_lines', 300)
 g:autoflip_type_name_limit = get(g:, 'autoflip_type_name_limit', 80)
 g:autoflip_prefer_auto_level = get(g:, 'autoflip_prefer_auto_level', 'clang-tidy')
+g:autoflip_max_ast_requests = get(g:, 'autoflip_max_ast_requests', 40)
 
 import autoload 'autoflip/core.vim' as core
 import autoload 'autoflip/lsp.vim' as lsp

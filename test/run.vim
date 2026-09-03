@@ -9,6 +9,7 @@ source test/test_identity.vim
 source test/test_types.vim
 source test/test_range.vim
 source test/test_actions.vim
+source test/test_best_effort.vim
 source test/test_hints.vim
 source test/test_lifecycle.vim
 source test/test_lsp_pipeline.vim

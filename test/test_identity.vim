@@ -24,6 +24,7 @@ for variable in [
     'g:autoflip_max_visible_lines',
     'g:autoflip_type_name_limit',
     'g:autoflip_prefer_auto_level',
+    'g:autoflip_max_ast_requests',
   ]
   assert_true(exists(variable), 'missing configuration ' .. variable)
 endfor

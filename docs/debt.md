@@ -1,5 +1,19 @@
 # Technical debt and intentional limitations
 
+## 2026-09-03 08:26 CEST - Best-effort clangd AST dependency
+
+Impact: `best-effort` is unavailable when clangd does not advertise
+`astProvider`, and an incompatible future AST schema causes candidates to
+remain explicit.
+
+Reason: standard LSP does not expose a semantic type-equality query. AutoFlip
+uses clangd's documented AST extension and only accepts its exact structured
+proof.
+
+Risk: best-effort coverage is intentionally bounded by
+`g:autoflip_max_ast_requests` and the visible range. The `clang-tidy` policy
+remains independent and available.
+
 ## 2026-08-29 09:50 CEST - Late lazy loading cannot replay diagnostics
 
 Impact: loading the AutoFlip runtime itself only after clangd has already

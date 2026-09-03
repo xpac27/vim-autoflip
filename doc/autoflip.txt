@@ -17,8 +17,9 @@ INTRODUCTION                                             *autoflip-introduction*
 AutoFlip displays two visual-only C++ type transformations:
 
   prefer-auto
-      Conceal an explicit local-variable type using replacements from clang-tidy
-      modernize-use-auto code actions.
+      Conceal an explicit local-variable type. The clang-tidy policy uses
+      modernize-use-auto code actions. The best-effort policy additionally
+      validates regex-nominated declarations through clangd's AST extension.
 
   show-deduced-types
       Conceal a simple auto declaration prefix and display the full inferred
@@ -65,8 +66,8 @@ COMMANDS                                                       *autoflip-command
 
                                             *:AutoFlipPreferAutoLevel*
 :AutoFlipPreferAutoLevel {level}
-                      Select clang-tidy and refresh the current prefer-auto
-                      buffer.
+                      Select clang-tidy or best-effort and refresh the current
+                      prefer-auto buffer.
 
                                                     *:AutoFlipRefresh*
 :AutoFlipRefresh      Force a new visible-range request.
@@ -105,6 +106,13 @@ g:autoflip_type_name_limit     Number. Default: 80. Longer types are skipped.
                                   *g:autoflip_prefer_auto_level*
 g:autoflip_prefer_auto_level   String. Default: "clang-tidy".
                       "clang-tidy" uses only modernize-use-auto actions.
+                      "best-effort" also validates bounded regex-nominated
+                      local declarations through clangd's AST extension.
+
+                                    *g:autoflip_max_ast_requests*
+g:autoflip_max_ast_requests    Number. Default: 40. Maximum best-effort AST
+                      requests per visible refresh. Zero disables extra
+                      candidates without disabling clang-tidy actions.
 
 No mappings are installed.
 
@@ -144,8 +152,8 @@ TROUBLESHOOTING                                         *autoflip-troubleshootin
 
 Use |:AutoFlipStatus| first. A waiting status names the missing dependency,
 clangd attachment, or capability. Zero substitutions usually means clangd did
-not produce an authoritative candidate or the conservative validator rejected
-an ambiguous shape.
+not produce an authoritative candidate or a validator rejected an ambiguous
+shape.
 
 Ensure compile_commands.json is accurate. AutoFlip never manufactures flags.
 Set g:lsp_log_file and g:lsp_log_verbose to inspect vim-lsp traffic. Keep
@@ -155,6 +163,10 @@ g:lsp_inlay_hints_enabled at 0 if duplicated hints appear.
 LIMITATIONS                                                 *autoflip-limitations*
 
 prefer-auto supports only direct one-edit modernize-use-auto WorkspaceEdits.
+best-effort additionally supports simple local declarations with an optional
+leading const and one * or & declarator. It rejects rvalue references, macros,
+multi-declarators, incomplete visible initializers, conversions, incompatible
+canonical types/ranges, and unknown expression shapes.
 
 show-deduced-types supports simple initialized local auto declarations.
 Command actions, multi-file edits, fields, aliases, function returns,
@@ -169,3 +181,13 @@ vim-lsp APIs. Normal startup loading caches them before later manual enable.
 AutoFlip targets Vim only, not Neovim, Coc, or other LSP clients.
 
 vim:tw=78:ts=8:noet:ft=help:norl:
+The best-effort policy scans a bounded visible range for simple local
+Type [*|&] name = initializer declarations, allowing a leading const qualifier
+and whitespace around every component. The initializer can continue onto later
+visible lines through its terminating semicolon. The scan only nominates AST
+requests. clangd must return matching declaration, type, and initializer
+ranges, compatible canonical types, and a conversion-free expression shape
+before AutoFlip renders a replacement.
+
+The best-effort policy requires clangd to advertise astProvider. Select
+clang-tidy when using an older or incompatible server.

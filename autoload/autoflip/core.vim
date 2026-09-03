@@ -2,12 +2,14 @@ vim9script
 
 import autoload 'autoflip/render.vim' as render
 import autoload 'autoflip/actions.vim' as actions
+import autoload 'autoflip/best_effort.vim' as best_effort
 import autoload 'autoflip/hints.vim' as hints
 import autoload 'autoflip/lsp.vim' as lsp
 import autoload 'autoflip/range.vim' as rangeutil
+import autoload 'autoflip/types.vim' as types
 
 const MODES = ['prefer-auto', 'show-deduced-types']
-const PREFER_AUTO_LEVELS = ['clang-tidy']
+const PREFER_AUTO_LEVELS = ['clang-tidy', 'best-effort']
 const CPP_FILETYPES = ['c', 'cpp']
 const CPP_EXTENSIONS = ['cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']
 
@@ -160,7 +162,13 @@ export def SetMode(mode: string)
 enddef
 
 def PreferAutoLevel(): string
-  return get(g:, 'autoflip_prefer_auto_level', 'clang-tidy')
+  var level = get(g:, 'autoflip_prefer_auto_level', 'clang-tidy')
+  if level ==# 'conservative'
+    return 'clang-tidy'
+  endif
+  return index(['same-type-copies', 'ast-proven-locals'], level) >= 0
+    ? 'best-effort'
+    : level
 enddef
 
 export def SetPreferAutoLevel(level: string)
@@ -221,6 +229,11 @@ export def Refresh(force: bool = false)
     state.status = 'waiting: clangd does not advertise code actions'
     return
   endif
+  if state.mode ==# 'prefer-auto' && prefer_auto_level ==# 'best-effort'
+      && !lsp.SupportsAst(bufnr)
+    state.status = 'waiting: clangd does not advertise AST support'
+    return
+  endif
   if state.mode ==# 'show-deduced-types' && !lsp.SupportsInlayHints(bufnr)
     state.status = 'waiting: clangd does not advertise inlay hints'
     return
@@ -236,7 +249,13 @@ export def Refresh(force: bool = false)
   var Callback = (response) => HandleReply(bufnr, generation, changedtick,
     request_mode, prefer_auto_level, requested, response)
   if request_mode ==# 'prefer-auto'
-    lsp.RequestCodeActions(bufnr, requested, Callback)
+    if prefer_auto_level ==# 'best-effort'
+      var candidates = best_effort.Candidates(bufnr, requested,
+        max([0, get(g:, 'autoflip_max_ast_requests', 40)]))
+      lsp.RequestPreferAuto(bufnr, requested, candidates, Callback)
+    else
+      lsp.RequestCodeActions(bufnr, requested, Callback)
+    endif
   else
     lsp.RequestInlayHints(bufnr, requested, Callback)
   endif
@@ -288,8 +307,28 @@ def HandleReply(
     return
   endif
   var fresh: list<dict<any>>
+  var ast_errors = 0
   if request_mode ==# 'prefer-auto'
-    fresh = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(response, 'result', []))
+    if prefer_auto_level ==# 'best-effort'
+      var result = get(response, 'result', {})
+      if type(result) != v:t_dict
+        state.status = 'error: malformed combined prefer-auto response'
+        return
+      endif
+      var action_views = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested,
+        get(result, 'actions', []))
+      var best_effort_views = best_effort.Normalize(bufnr, get(result, 'asts', []))
+      for action_view in action_views
+        best_effort_views = best_effort_views->filter((_, candidate_view) =>
+          candidate_view.lnum != action_view.lnum
+            || candidate_view.col + candidate_view.length <= action_view.col
+            || action_view.col + action_view.length <= candidate_view.col)
+      endfor
+      fresh = types.SortViews(action_views + best_effort_views)
+      ast_errors = get(result, 'ast_errors', 0)
+    else
+      fresh = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(response, 'result', []))
+    endif
   else
     fresh = hints.Normalize(bufnr, requested, get(response, 'result', []),
       get(g:, 'autoflip_type_name_limit', 80))
@@ -303,7 +342,8 @@ def HandleReply(
     state.views[view.id] = view
   endfor
   SnapshotViewLines(bufnr, state)
-  state.status = printf('enabled; clangd response accepted (%d substitutions)', len(fresh))
+  state.status = printf('enabled; clangd response accepted (%d substitutions%s)', len(fresh),
+    ast_errors > 0 ? printf('; %d malformed AST replies skipped', ast_errors) : '')
   render.Render(bufnr, state, values(state.views))
   if state.refresh_after_reply
     state.refresh_after_reply = false

@@ -1,5 +1,24 @@
 # Architecture
 
+## 2026-09-03 08:26 CEST - Generic best-effort AST policy
+
+`best_effort.vim` performs one bounded masked/local-scope scan of the visible
+range. It treats the left side of each simple local `=` declaration as a
+candidate type, optional `*` or `&` declarator, and identifier; the initializer
+may continue through a later visible terminating semicolon.
+
+The scanner has no semantic authority. clangd's `textDocument/ast` reply must
+match the candidate's `Var` declaration, semantic type range, rendered source
+range, and initializer range. PCClangd's quoted canonical types must be
+compatible after only top-level cv/reference tolerance. The expression must be
+direct or pass solely through no-op, lvalue-to-rvalue, and cleanup wrappers.
+All other conversion and AST shapes fail closed.
+
+```text
+clang-tidy diagnostic -> vim-lsp -> code action --+-> TypeView
+best-effort scan -> vim-lsp -> clangd AST --------+
+```
+
 ## 2026-08-31 15:49 CEST - Selective edit retention
 
 Core snapshots the complete source line for each rendered TypeView. A buffer

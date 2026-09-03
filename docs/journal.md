@@ -1,5 +1,14 @@
 # Engineering journal
 
+## 2026-09-03 08:26 CEST - Replace specialized AST policies with best effort
+
+- Added the `best-effort` policy alongside default `clang-tidy`.
+- Replaced specialized copy, pointer, reference, and call matchers with one
+  bounded declaration scanner and a generic exact-range, canonical-type, and
+  conversion-free AST validator.
+- Added multiline initializer coverage and preserved clang-tidy precedence for
+  overlapping views.
+
 ## 2026-09-03 08:26 CEST - Remove superseded AST policy
 
 - Removed the `same-type-copies` and `ast-proven-locals` policy branches,
