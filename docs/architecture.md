@@ -1,16 +1,5 @@
 # Architecture
 
-## 2026-08-31 15:32 CEST - Linear AST candidate preflight
-
-AST-backed prefer-auto candidate discovery uses one masked lexical/scope pass
-from the start of the buffer through the visible range. The resulting
-per-line snapshots feed simple-copy, reference/pointer, direct-call, and
-two-line-call matching without rescanning the file prefix for each candidate.
-
-This keeps the UI-side preflight linear in the scanned source instead of
-quadratic in viewport size and line position. vim-lsp requests remain
-asynchronous; `g:autoflip_max_visible_lines` bounds the synchronous scan.
-
 ## 2026-08-31 15:49 CEST - Selective edit retention
 
 Core snapshots the complete source line for each rendered TypeView. A buffer
@@ -21,10 +10,10 @@ unchanged, and the accepted clangd reply is still authoritative.
 
 ## 2026-08-31 15:58 CEST - Diagnostic reply ownership
 
-LSP diagnostic notifications no longer impersonate buffer edits. A
-notification received while a code-action or AST reply is in flight marks a
-follow-up refresh, allowing that reply to complete under its original
-generation. Actual buffer changes still invalidate pending work immediately.
+LSP diagnostic notifications no longer impersonate buffer edits. A notification
+received while an LSP reply is in flight marks a follow-up refresh, allowing
+that reply to complete under its original generation. Actual buffer changes
+still invalidate pending work immediately.
 
 ## 2026-08-29 09:50 CEST - Eager diagnostic subscription
 
@@ -61,46 +50,6 @@ all AutoFlip properties and matches. This keeps their editing semantics
 unchanged. Since virtual text remains buffer-owned, omission of the selected ID
 is visible in every split of the buffer, but it no longer affects unrelated
 types.
-
-## 2026-08-31 14:51 CEST - Broader AST-proven local authority
-
-`ast-proven-locals` retains all conservative and `same-type-copies` results,
-then adds four exact PCClangd AST shapes: direct class copy construction
-(`CXXConstruct` with one `NoOp` cast over a `DeclRef`), lvalue
-`CXXOperatorCall` `[]` bindings to a single `&` declaration, and direct
-pointer-variable reads, and unwrapped `Call`/`CXXMemberCall` value results.
-The corresponding displayed spellings are `auto`, `auto&`, `auto*`, and
-`const auto`, `const auto&`, or `const auto*` for a leading const qualifier.
-
-The scanner remains a bounded nomination mechanism and supports only one-line,
-single-declarator, non-cv declarations, plus a direct-call initializer on the
-immediately following line. AST validation requires exact declaration/type/
-initializer ranges and fails closed. PCClangd exposes the
-lvalue category of overloaded `operator[]` in its extension `arcana` field;
-that field is used only for this otherwise-unavailable lvalue proof. No
-container, template, or project type name is recognized.
-
-## 2026-08-28 20:29 CEST - Optional AST copy authority
-
-The `conservative` prefer-auto level retains the original code-action path.
-`same-type-copies` discovers a bounded set of simple one-line copy candidates,
-then the adapter requests `textDocument/ast` for each candidate through public
-vim-lsp APIs. Discovery is not semantic authority.
-
-`copies.vim` accepts only a structured `Var` declaration whose type range is
-exact, and whose initializer is an `ImplicitCast(LValueToRValue)` containing a
-single `DeclRef` with the expected source identifier. It never reads clangd's
-human-oriented `arcana` dump. The resulting `auto` TypeViews are merged with
-validated clang-tidy TypeViews before the shared renderer sees them.
-
-```text
-simple copy discovery -> vim-lsp -> clangd AST -> copies.vim --+
-clang-tidy diagnostic -> vim-lsp -> code action -> actions.vim -+-> TypeView
-```
-
-Generation, `changedtick`, mode, and prefer-auto-level checks apply after both
-asynchronous result sets have joined. A policy change therefore invalidates an
-in-flight combined reply just like an edit or mode change.
 
 ## 2026-08-28 19:41 CEST - Reveal ownership
 

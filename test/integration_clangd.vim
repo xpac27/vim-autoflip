@@ -82,37 +82,6 @@ if empty(filter(copy(s:preferred), {_, view -> view.replacement =~# '\<auto\>'})
   cquit
 endif
 
-AutoFlipPreferAutoLevel same-type-copies
-let s:copy_line = search('IntegrationState copied = state;', 'nw')
-let s:copy_again_line = search('IntegrationState copied_again = copied;', 'nw')
-let s:remaining = 500
-while s:remaining > 0
-  let s:copy_views = filter(values(get(get(b:, 'autoflip_state', {}), 'views', {})),
-        \ {_, view -> (view.lnum == s:copy_line || view.lnum == s:copy_again_line)
-        \   && view.replacement ==# 'auto'})
-  if len(s:copy_views) == 2
-    break
-  endif
-  sleep 20m
-  let s:remaining -= 1
-endwhile
-if len(get(s:, 'copy_views', [])) != 2
-  call writefile(['FAIL: real clangd AST did not render both same-type copy views; ' .. execute('AutoFlipStatus')->trim()], '/dev/stderr')
-  cquit
-endif
-if s:copy_views[0].length != strlen('IntegrationState')
-  call writefile(['FAIL: AST copy view did not cover the explicit type'], '/dev/stderr')
-  cquit
-endif
-let s:selected_copy = filter(copy(s:copy_views), {_, view -> view.lnum == s:copy_line})[0]
-call cursor(s:copy_line, s:selected_copy.col)
-doautocmd CursorMoved
-call assert_equal([], filter(prop_list(s:copy_line), {_, prop -> prop.type =~# '^autoflip_'}))
-call assert_equal(1, len(filter(prop_list(s:copy_again_line), {_, prop -> prop.type =~# '^autoflip_'})))
-call cursor(s:copy_line, s:selected_copy.col + s:selected_copy.length)
-doautocmd CursorMoved
-call assert_equal(1, len(filter(prop_list(s:copy_line), {_, prop -> prop.type =~# '^autoflip_'})))
-call assert_equal(1, len(filter(prop_list(s:copy_again_line), {_, prop -> prop.type =~# '^autoflip_'})))
 call assert_equal(s:before, getline(1, '$'))
 call assert_false(&modified)
 if !empty(v:errors)

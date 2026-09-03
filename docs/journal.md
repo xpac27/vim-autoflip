@@ -1,5 +1,43 @@
 # Engineering journal
 
+## 2026-09-03 08:26 CEST - Remove superseded AST policy
+
+- Removed the `same-type-copies` and `ast-proven-locals` policy branches,
+  specialized copy validation, and their dedicated test coverage.
+- Restored `clang-tidy` as the sole supported prefer-auto policy while
+  preserving the generic vim-lsp clangd AST transport for the replacement
+  policy.
+- Removed stale active documentation for the retired policy.
+
+## 2026-09-02 11:35 CEST - Prioritize clang-tidy views over AST overlaps
+
+- Prevented an AST-proven full pointer replacement from overlapping a
+  clang-tidy partial type replacement on the same declaration.
+- Retained the clang-tidy view as the direct authority, which correctly
+  composes with the untouched `const` and pointer declarator.
+- Added an end-to-end mocked pipeline regression for `const Type*`.
+
+## 2026-09-01 15:39 CEST - Accept qualified pointer and cleanup-wrapped calls
+
+- Matched PCClangd's pointer node range for `const Type*`: its semantic range
+  excludes the leading qualifier, while the display replacement must cover the
+  complete source spelling.
+- Accepted the no-conversion `ExprWithCleanups -> CXXBindTemporary -> Call`
+  shape emitted for a direct static call result.
+- Added regression coverage for both AST forms while retaining exact
+  declaration, type, and initializer-range validation.
+
+## 2026-09-01 11:03 CEST - Accept partial pointer type code actions
+
+- Reproduced PCClangd's `modernize-use-auto` action for an `if` initializer:
+  it replaces only `EnumTypeInfoAsset` with `auto` and deliberately preserves
+  the surrounding `const` and pointer declarator.
+- Extended the fail-closed lexical tail check to accept only a pointer
+  declarator followed by an identifier and initializer, preserving the
+  existing one-edit, clang-tidy-diagnostic, local-scope, and replacement
+  spelling requirements.
+- Added a regression test for the exact `if (const Type* name = ...)` shape.
+
 ## 2026-08-29 11:09 CEST - Finalize compact README demonstration
 
 - Regenerated the approved README GIF directly from the original recording,

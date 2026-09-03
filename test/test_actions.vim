@@ -60,6 +60,25 @@ bwipe!
 new
 setlocal filetype=cpp
 setline(1, [
+  'void f() {',
+  '  if (const EnumTypeInfoAsset* awardGroupsTypeInfoAsset = find()) {',
+  '  }',
+  '}',
+])
+var condition_uri = 'file:///tmp/condition-actions.cpp'
+var condition_requested = {start: {line: 0, character: 0}, end: {line: 3, character: 1}}
+var partial_pointer_range = LspRange(1, 12, 29)
+var condition_view = actions.Validate(bufnr(), condition_uri, condition_requested,
+  Action(condition_uri, partial_pointer_range, 'auto'))
+assert_equal(2, condition_view.lnum)
+assert_equal(13, condition_view.col)
+assert_equal(17, condition_view.length)
+assert_equal('auto', condition_view.replacement)
+bwipe!
+
+new
+setlocal filetype=cpp
+setline(1, [
   'class Derived {',
   '  int f() const override',
   '  {',

@@ -12,28 +12,6 @@
   other lines while AutoFlip waits for a refreshed clangd reply.
 - Edited or shifted lines clear immediately; insert-mode reveal remains intact.
 
-## 2026-08-31 15:32 CEST - Responsive AST preflight
-
-- AST-backed candidate discovery now masks and classifies the visible source
-  through one shared linear pass rather than repeatedly rescanning its prefix.
-- Code-action and AST requests remain asynchronous through vim-lsp.
-
-## 2026-08-31 14:51 CEST - Broader AST-proven locals
-
-- `ast-proven-locals` preserves conservative and `same-type-copies` results,
-  then adds exact clangd AST proof for direct class copies, lvalue subscript
-  reference bindings, and direct pointer-variable reads.
-- It displays the corresponding `auto`, `auto&`, or `auto*` spelling without
-  special-casing containers or project types.
-- Direct call results now render as `auto`; top-level const call-result
-  declarations render as `const auto`.
-- Pointer call results and const lvalue-subscript references render as
-  `auto*`/`const auto*` and `const auto&`.
-- A direct call initializer may occupy the line immediately following its
-  declaration; wider multiline parsing remains intentionally unsupported.
-- Rvalue references, null pointers, conversion-wrapped calls, malformed
-  ranges, and ambiguous ASTs fail closed.
-
 ## 2026-08-29 09:50 CEST - Reliable delayed enable
 
 - AutoFlip registers for vim-lsp notifications during plugin load, before a
@@ -59,19 +37,6 @@
 - Insert mode and `:AutoFlipReveal` retain intentional full-buffer reveal.
 - Split windows keep every unrelated type concealed; only the selected type is
   exposed across splits because its virtual text is buffer-owned.
-
-## 2026-08-28 20:29 CEST - Configurable prefer-auto authority
-
-- `prefer-auto` now has a conservative default and an opt-in
-  `same-type-copies` level.
-- The stronger level preserves all clang-tidy results and adds cv/ref/pointer-
-  free local `Type target = source;` copies only when clangd's structured AST proves
-  the initializer is a direct reference with only an `LValueToRValue`
-  conversion.
-- `:AutoFlipPreferAutoLevel` switches the policy at runtime.
-- `g:autoflip_max_ast_requests` bounds the additional visible-range requests.
-- Missing capabilities, malformed AST replies, conversions, and ambiguous
-  syntax fail closed without changing source.
 
 ## 2026-08-28 19:41 CEST - Stable cursor reveal
 

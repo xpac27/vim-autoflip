@@ -302,7 +302,7 @@ def FinishPreferAutoPart(
     ok: true,
     result: {
       actions: get(pending.actions, 'result', []),
-      copies: get(pending.asts, 'result', []),
+      asts: get(pending.asts, 'result', []),
       ast_errors: get(pending.asts, 'errors', 0),
     },
     server: get(pending.actions, 'server', ''),

@@ -5,5 +5,5 @@ export def ModeComplete(lead: string, _line: string, _pos: number): list<string>
 enddef
 
 export def PreferAutoLevelComplete(lead: string, _line: string, _pos: number): list<string>
-  return ['conservative', 'same-type-copies', 'ast-proven-locals']->filter((_, level) => level =~# '^' .. escape(lead, '\\'))
+  return ['clang-tidy']->filter((_, level) => level =~# '^' .. escape(lead, '\\'))
 enddef

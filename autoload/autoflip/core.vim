@@ -2,14 +2,12 @@ vim9script
 
 import autoload 'autoflip/render.vim' as render
 import autoload 'autoflip/actions.vim' as actions
-import autoload 'autoflip/copies.vim' as copies
 import autoload 'autoflip/hints.vim' as hints
 import autoload 'autoflip/lsp.vim' as lsp
 import autoload 'autoflip/range.vim' as rangeutil
-import autoload 'autoflip/types.vim' as types
 
 const MODES = ['prefer-auto', 'show-deduced-types']
-const PREFER_AUTO_LEVELS = ['conservative', 'same-type-copies', 'ast-proven-locals']
+const PREFER_AUTO_LEVELS = ['clang-tidy']
 const CPP_FILETYPES = ['c', 'cpp']
 const CPP_EXTENSIONS = ['cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']
 
@@ -162,7 +160,7 @@ export def SetMode(mode: string)
 enddef
 
 def PreferAutoLevel(): string
-  return get(g:, 'autoflip_prefer_auto_level', 'conservative')
+  return get(g:, 'autoflip_prefer_auto_level', 'clang-tidy')
 enddef
 
 export def SetPreferAutoLevel(level: string)
@@ -223,11 +221,6 @@ export def Refresh(force: bool = false)
     state.status = 'waiting: clangd does not advertise code actions'
     return
   endif
-  if state.mode ==# 'prefer-auto' && prefer_auto_level !=# 'conservative'
-      && !lsp.SupportsAst(bufnr)
-    state.status = 'waiting: clangd does not advertise AST support'
-    return
-  endif
   if state.mode ==# 'show-deduced-types' && !lsp.SupportsInlayHints(bufnr)
     state.status = 'waiting: clangd does not advertise inlay hints'
     return
@@ -243,16 +236,7 @@ export def Refresh(force: bool = false)
   var Callback = (response) => HandleReply(bufnr, generation, changedtick,
     request_mode, prefer_auto_level, requested, response)
   if request_mode ==# 'prefer-auto'
-    if prefer_auto_level !=# 'conservative'
-      var candidates = prefer_auto_level ==# 'same-type-copies'
-        ? copies.Candidates(bufnr, requested,
-          max([0, get(g:, 'autoflip_max_ast_requests', 40)]))
-        : copies.AstProvenCandidates(bufnr, requested,
-        max([0, get(g:, 'autoflip_max_ast_requests', 40)]))
-      lsp.RequestPreferAuto(bufnr, requested, candidates, Callback)
-    else
-      lsp.RequestCodeActions(bufnr, requested, Callback)
-    endif
+    lsp.RequestCodeActions(bufnr, requested, Callback)
   else
     lsp.RequestInlayHints(bufnr, requested, Callback)
   endif
@@ -304,24 +288,8 @@ def HandleReply(
     return
   endif
   var fresh: list<dict<any>>
-  var ast_errors = 0
   if request_mode ==# 'prefer-auto'
-    if prefer_auto_level !=# 'conservative'
-      var result = get(response, 'result', 0)
-      if type(result) != v:t_dict
-        state.status = 'error: malformed combined prefer-auto response'
-        return
-      endif
-      fresh = MergeViews([
-        actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(result, 'actions', [])),
-        prefer_auto_level ==# 'same-type-copies'
-          ? copies.Normalize(bufnr, get(result, 'copies', []))
-          : copies.NormalizeAstProven(bufnr, get(result, 'copies', [])),
-      ])
-      ast_errors = get(result, 'ast_errors', 0)
-    else
-      fresh = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(response, 'result', []))
-    endif
+    fresh = actions.Normalize(bufnr, lsp.CurrentUri(bufnr), requested, get(response, 'result', []))
   else
     fresh = hints.Normalize(bufnr, requested, get(response, 'result', []),
       get(g:, 'autoflip_type_name_limit', 80))
@@ -335,32 +303,12 @@ def HandleReply(
     state.views[view.id] = view
   endfor
   SnapshotViewLines(bufnr, state)
-  state.status = printf('enabled; clangd response accepted (%d substitutions%s)', len(fresh),
-    ast_errors > 0 ? printf('; %d malformed AST replies skipped', ast_errors) : '')
+  state.status = printf('enabled; clangd response accepted (%d substitutions)', len(fresh))
   render.Render(bufnr, state, values(state.views))
   if state.refresh_after_reply
     state.refresh_after_reply = false
     ScheduleRefresh(bufnr, state, 1)
   endif
-enddef
-
-def MergeViews(groups: list<list<dict<any>>>): list<dict<any>>
-  var by_location: dict<any> = {}
-  var ambiguous: dict<bool> = {}
-  for group in groups
-    for view in group
-      var location = printf('%d:%d:%d', view.lnum, view.col, view.length)
-      if has_key(by_location, location) && by_location[location].replacement !=# view.replacement
-        ambiguous[location] = true
-      else
-        by_location[location] = view
-      endif
-    endfor
-  endfor
-  for location in keys(ambiguous)
-    remove(by_location, location)
-  endfor
-  return types.SortViews(values(by_location))
 enddef
 
 export def Reveal()

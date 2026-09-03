@@ -40,34 +40,6 @@ Risk: another split briefly exposes the same selected type. Every unrelated
 type remains concealed. Future window-local property visibility could narrow
 the selected omission to the active split.
 
-## 2026-08-28 20:29 CEST - clangd AST extension dependency
-
-Impact: `same-type-copies` is unavailable when clangd does not advertise
-`astProvider`, and a future incompatible AST schema change causes affected
-candidates to remain explicit.
-
-Reason: standard LSP and `modernize-use-auto` expose no authoritative edit for
-plain same-type copies. clangd documents `textDocument/ast` as an extension
-that may evolve. Strict structured validation is safer than parsing hover text
-or human-oriented AST dumps.
-
-Risk: the stronger level may lose coverage after a clangd change. It fails
-closed and reports missing capability or malformed reply counts; conservative
-mode remains available.
-
-## 2026-08-28 20:29 CEST - Narrow copy grammar and request fan-out
-
-Impact: only one-line `Type target = source;` locals without cv/ref/pointer
-spelling are discovered. Each declaration costs one additional AST request, capped by
-`g:autoflip_max_ast_requests` per refresh.
-
-Reason: this is the smallest shape that handles the reported enum copies while
-allowing structured proof that no type-changing conversion occurs.
-
-Risk: complex safe copies remain explicit, and a visible region with many
-candidates adds bounded clangd work. Expansion requires a structured AST
-fixture and deterministic rejection tests for every new declaration shape.
-
 ## 2026-08-28 19:41 CEST - Buffer-wide cursor reveal (superseded)
 
 Impact: holding the cursor inside a rendered source type reveals the original

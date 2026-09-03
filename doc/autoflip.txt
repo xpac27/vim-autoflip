@@ -17,9 +17,8 @@ INTRODUCTION                                             *autoflip-introduction*
 AutoFlip displays two visual-only C++ type transformations:
 
   prefer-auto
-      Conceal an explicit local-variable type. The conservative level displays
-      replacements from clang-tidy modernize-use-auto code actions. Opt-in
-      levels also accept progressively broader clangd AST-proven locals.
+      Conceal an explicit local-variable type using replacements from clang-tidy
+      modernize-use-auto code actions.
 
   show-deduced-types
       Conceal a simple auto declaration prefix and display the full inferred
@@ -66,8 +65,7 @@ COMMANDS                                                       *autoflip-command
 
                                             *:AutoFlipPreferAutoLevel*
 :AutoFlipPreferAutoLevel {level}
-                      Select conservative, same-type-copies, or
-                      ast-proven-locals and refresh the current prefer-auto
+                      Select clang-tidy and refresh the current prefer-auto
                       buffer.
 
                                                     *:AutoFlipRefresh*
@@ -100,30 +98,13 @@ g:autoflip_reveal_under_cursor Boolean. Default: true.
 
                                         *g:autoflip_max_visible_lines*
 g:autoflip_max_visible_lines   Number. Default: 300.
-                      Also bounds synchronous lexical preflight for AST-backed
-                      prefer-auto levels. vim-lsp requests remain asynchronous.
 
                                            *g:autoflip_type_name_limit*
 g:autoflip_type_name_limit     Number. Default: 80. Longer types are skipped.
 
                                   *g:autoflip_prefer_auto_level*
-g:autoflip_prefer_auto_level   String. Default: "conservative".
-                      "conservative" uses only modernize-use-auto actions.
-                      "same-type-copies" adds clangd AST-proven declarations
-                      shaped as a local Type target = source without cv/ref or
-                      pointer spelling.
-                      "ast-proven-locals" retains those results and accepts
-                      direct class copies, lvalue Type& target = object[index]
-                      bindings, and direct Type* target = source reads when
-                      clangd reports their exact AST shapes. A leading const
-                      qualifier is retained as const auto&, or const auto*.
-                      Direct call results are also supported and retain a
-                      top-level const spelling as const auto.
-
-                                    *g:autoflip_max_ast_requests*
-g:autoflip_max_ast_requests    Number. Default: 40. Maximum additional AST
-                      requests per visible refresh. Zero disables copy
-                      candidates without disabling clang-tidy actions.
+g:autoflip_prefer_auto_level   String. Default: "clang-tidy".
+                      "clang-tidy" uses only modernize-use-auto actions.
 
 No mappings are installed.
 
@@ -144,7 +125,7 @@ at the same line number remain displayed. Edited or shifted lines clear
 immediately.
 
 Diagnostic updates queue a follow-up refresh without invalidating an in-flight
-code-action or AST reply. Actual buffer edits still invalidate stale replies.
+LSP reply. Actual buffer edits still invalidate stale replies.
 
 Accepted candidates become a shared TypeView, then a renderer places virtual
 text before the source range and a per-window high-priority Conceal match over
@@ -158,24 +139,6 @@ mode. A cursor-selected type is revealed in every split showing the buffer
 because Vim virtual text properties are buffer-owned; unrelated types remain
 concealed, and conceal matches and saved options are still window-owned.
 
-At the same-type-copies level, a light lexical scan only discovers possible
-one-line copy declarations. It has no semantic authority. Each candidate is
-sent through vim-lsp to clangd's textDocument/ast extension. AutoFlip requires
-an exact Var declaration/type range and an initializer consisting solely of an
-LValueToRValue ImplicitCast over a DeclRef. Every other shape is skipped. Both
-this result and normal clang-tidy actions pass through TypeView validation and
-rendering without changing the buffer.
-
-The ast-proven-locals level also scans non-cv, single-declarator Type& and
-Type* declarations. It accepts only a direct class copy construction, an
-lvalue operator[] call for a reference binding, or a direct pointer-variable
-read. It also accepts unwrapped Call and CXXMemberCall value results, using
-const auto for a top-level const declaration. Exact declaration, type, and
-initializer ranges are always required. A direct call may occupy the one line
-immediately following its declaration.
-PCClangd exposes the lvalue category of overloaded operator[] in its AST
-extension arcana field; AutoFlip uses that field only for this proof.
-
 ===============================================================================
 TROUBLESHOOTING                                         *autoflip-troubleshooting*
 
@@ -188,23 +151,10 @@ Ensure compile_commands.json is accurate. AutoFlip never manufactures flags.
 Set g:lsp_log_file and g:lsp_log_verbose to inspect vim-lsp traffic. Keep
 g:lsp_inlay_hints_enabled at 0 if duplicated hints appear.
 
-The same-type-copies and ast-proven-locals levels require clangd to advertise
-astProvider. Select the conservative level when using an older or incompatible
-server.
-
 ===============================================================================
 LIMITATIONS                                                 *autoflip-limitations*
 
-Conservative prefer-auto supports only direct one-edit modernize-use-auto
-WorkspaceEdits. same-type-copies additionally supports one-line,
-single-declarator Type target = source locals without cv/ref/pointer spelling
-when clangd's AST proves no conversion beyond LValueToRValue. Qualifiers,
-pointers, references, calls, constructors, casts, conversions, and ambiguous
-AST nodes are skipped at that level. ast-proven-locals additionally accepts
-only single & or * declarators with the exact documented AST proof. Rvalue
-references, null pointers, conversion-wrapped calls, conversions, macros,
-multi-declarators, wider multiline declarations, and ambiguous AST nodes are
-skipped.
+prefer-auto supports only direct one-edit modernize-use-auto WorkspaceEdits.
 
 show-deduced-types supports simple initialized local auto declarations.
 Command actions, multi-file edits, fields, aliases, function returns,

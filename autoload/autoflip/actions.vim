@@ -75,6 +75,7 @@ def LexicallySafe(bufnr: number, bytes: dict<any>): bool
     return false
   endif
   if after !~# '^\s\+\h\w*\s*\%(=\|{\)'
+      && after !~# '^\s*\*\s\+\h\w*\s*\%(=\|{\)'
     return false
   endif
   return syntax.IsLocal(bufnr, bytes.lnum, bytes.col)

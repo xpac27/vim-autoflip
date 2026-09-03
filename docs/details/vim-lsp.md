@@ -13,24 +13,6 @@ load, before startup buffers attach to clangd. `User lsp_setup` and
 keeps delayed manual enable reliable without reading private vim-lsp
 diagnostic state or sending a fake document change.
 
-## 2026-08-28 20:29 CEST - clangd AST requests
-
-The opt-in `same-type-copies` level additionally reads `astProvider` through
-`lsp#get_server_capabilities(name)` and sends one bounded
-`textDocument/ast` request per discovered copy candidate with
-`lsp#send_request(name, request)`.
-
-The adapter joins raw AST replies with the normal code-action response before
-calling core. Each AST reply retains the candidate that originated it, even
-when replies arrive out of order. Transport failures become skipped malformed
-reply counts. Core then applies its normal generation, changedtick, mode, and
-policy checks to the combined response.
-
-This is a documented clangd protocol extension, not standard LSP. AutoFlip
-checks the advertised capability and validates only structured `role`, `kind`,
-`detail`, `range`, and `children` fields. It does not inspect the optional
-human-oriented `arcana` field. No request changes the server document.
-
 ## 2026-08-28 18:06 CEST - Verified upstream API
 
 The host did not contain vim-lsp itself, so the implementation was checked

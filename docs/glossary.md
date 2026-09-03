@@ -15,14 +15,10 @@
 - **full reveal**: removal of every AutoFlip property and conceal match for
   insert mode or the timed reveal command.
 
-## 2026-08-28 20:29 CEST - Prefer-auto levels
+## 2026-09-03 08:26 CEST - Prefer-auto policy
 
-- **conservative**: the default prefer-auto level, authorized exclusively by a
-  direct clang-tidy `modernize-use-auto` code action.
-- **same-type-copies**: an opt-in superset that also accepts a narrow local
-  copy declaration when clangd's structured AST proves the supported shape.
-- **AST candidate**: a lexically discovered request range with no authority of
-  its own; it becomes a TypeView only after clangd AST validation.
+- **clang-tidy**: the default and currently sole prefer-auto policy, authorized
+  exclusively by a direct clang-tidy `modernize-use-auto` code action.
 
 ## 2026-08-28 19:41 CEST - Reveal ownership
 
