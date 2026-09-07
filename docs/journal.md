@@ -1,5 +1,14 @@
 # Engineering journal
 
+## 2026-09-07 17:40 CEST - Refresh README policy demonstration
+
+- Re-recorded the real Vim, vim-lsp, and clangd demonstration against the
+  current plugin implementation.
+- Made the current `clang-tidy` and `best-effort` prefer-auto policy names
+  visible in the command sequence before switching to `show-deduced-types`.
+- Preserved the Hack font, Humdrum highlighting, step-by-step cursor movement,
+  borderless 800x526 output, and display-only source restoration on disable.
+
 ## 2026-09-07 15:15 CEST - Match qualified best-effort AST type spellings
 
 - Investigated clangd responses for explicit `TeamId` and `PlayerScore`
