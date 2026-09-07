@@ -1,5 +1,15 @@
 # Engineering journal
 
+## 2026-09-07 17:45 CEST - Verify late vim-lsp attachment recovery
+
+- Confirmed that vim-lsp emits `User lsp_buffer_enabled` only after the
+  server initialization/flush barrier reports the buffer enabled.
+- Added deterministic coverage that enables AutoFlip before clangd is
+  attached, then verifies that this event schedules a refresh and renders the
+  accepted view.
+- Ran the existing real vim-lsp/clangd integration against the local vim-lsp
+  checkout; it passed without a production-code change.
+
 ## 2026-09-07 17:45 CEST - Consolidate TypeView normalization and state reset
 
 - Moved the shared location-based TypeView de-duplication and ambiguity
