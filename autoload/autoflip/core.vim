@@ -64,6 +64,14 @@ def StopTimer(state: dict<any>, key: string)
   state[key] = -1
 enddef
 
+def ResetViewsAndReveal(state: dict<any>)
+  state.views = {}
+  state.view_lines = {}
+  state.revealed = false
+  state.revealed_view_id = ''
+  state.reveal_source = ''
+enddef
+
 def ScheduleRefresh(bufnr: number, state: dict<any>, delay: number)
   StopTimer(state, 'pending_timer')
   var generation = state.generation
@@ -124,11 +132,7 @@ export def Disable()
   state.refresh_after_reply = false
   render.Cleanup(bufnr, state)
   state.enabled = false
-  state.revealed = false
-  state.revealed_view_id = ''
-  state.reveal_source = ''
-  state.views = {}
-  state.view_lines = {}
+  ResetViewsAndReveal(state)
   state.status = 'disabled'
 enddef
 
@@ -150,11 +154,7 @@ export def SetMode(mode: string)
     return
   endif
   state.mode = mode
-  state.views = {}
-  state.view_lines = {}
-  state.revealed = false
-  state.revealed_view_id = ''
-  state.reveal_source = ''
+  ResetViewsAndReveal(state)
   state.generation += 1
   if state.enabled
     Refresh(true)
@@ -181,11 +181,7 @@ export def SetPreferAutoLevel(level: string)
   if state.mode !=# 'prefer-auto'
     return
   endif
-  state.views = {}
-  state.view_lines = {}
-  state.revealed = false
-  state.revealed_view_id = ''
-  state.reveal_source = ''
+  ResetViewsAndReveal(state)
   state.generation += 1
   render.Render(bufnr('%'), state, [])
   if state.enabled

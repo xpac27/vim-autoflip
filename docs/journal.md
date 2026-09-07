@@ -1,5 +1,15 @@
 # Engineering journal
 
+## 2026-09-07 17:45 CEST - Consolidate TypeView normalization and state reset
+
+- Moved the shared location-based TypeView de-duplication and ambiguity
+  rejection from the action and inlay-hint normalizers into `types.vim`.
+- Centralized clearing cached views and reveal state for disable, mode changes,
+  and prefer-auto policy changes, preserving their existing refresh behavior.
+- Added a direct deterministic contract for duplicate acceptance, conflicting
+  replacement rejection, and ordering; `make check` remains the verification
+  gate.
+
 ## 2026-09-07 17:40 CEST - Refresh README policy demonstration
 
 - Re-recorded the real Vim, vim-lsp, and clangd demonstration against the

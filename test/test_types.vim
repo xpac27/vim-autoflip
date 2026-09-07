@@ -10,3 +10,11 @@ assert_equal(['2:4', '3:1'], types.SortViews([
   extend(types.NewView('prefer-auto', 2, 4, 3, 'auto'), {label: '2:4'}),
 ])->mapnew((_, item) => item.label))
 
+var first = types.NewView('prefer-auto', 2, 4, 3, 'auto')
+var duplicate = types.NewView('prefer-auto', 2, 4, 3, 'auto')
+var conflicting = types.NewView('prefer-auto', 2, 4, 3, 'const auto&')
+var distinct = types.NewView('show-deduced-types', 3, 1, 4, 'int')
+assert_equal([first.id, distinct.id], types.UniqueViews([distinct, first, duplicate])
+  ->mapnew((_, item) => item.id))
+assert_equal([distinct.id], types.UniqueViews([first, conflicting, distinct])
+  ->mapnew((_, item) => item.id))

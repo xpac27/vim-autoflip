@@ -107,22 +107,13 @@ export def Normalize(
   if type(hints) != v:t_list
     return []
   endif
-  var by_location: dict<any> = {}
-  var ambiguous: dict<bool> = {}
+  var views: list<dict<any>> = []
   for hint in hints
     var view = Validate(bufnr, requested, hint, limit)
     if empty(view)
       continue
     endif
-    var location = printf('%d:%d:%d', view.lnum, view.col, view.length)
-    if has_key(by_location, location) && by_location[location].replacement !=# view.replacement
-      ambiguous[location] = true
-    else
-      by_location[location] = view
-    endif
+    add(views, view)
   endfor
-  for location in keys(ambiguous)
-    remove(by_location, location)
-  endfor
-  return types.SortViews(values(by_location))
+  return types.UniqueViews(views)
 enddef

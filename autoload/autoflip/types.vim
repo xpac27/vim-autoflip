@@ -36,3 +36,19 @@ export def SortViews(views: list<dict<any>>): list<dict<any>>
   return views->sort((a, b) => a.lnum == b.lnum ? a.col - b.col : a.lnum - b.lnum)
 enddef
 
+export def UniqueViews(views: list<dict<any>>): list<dict<any>>
+  var by_location: dict<any> = {}
+  var ambiguous: dict<bool> = {}
+  for view in views
+    var location = printf('%d:%d:%d', view.lnum, view.col, view.length)
+    if has_key(by_location, location) && by_location[location].replacement !=# view.replacement
+      ambiguous[location] = true
+    else
+      by_location[location] = view
+    endif
+  endfor
+  for location in keys(ambiguous)
+    remove(by_location, location)
+  endfor
+  return SortViews(values(by_location))
+enddef

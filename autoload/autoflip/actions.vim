@@ -114,22 +114,13 @@ export def Normalize(
   if type(actions) != v:t_list
     return []
   endif
-  var by_id: dict<any> = {}
-  var ambiguous: dict<bool> = {}
+  var views: list<dict<any>> = []
   for action in actions
     var view = Validate(bufnr, current_uri, requested, action)
     if empty(view)
       continue
     endif
-    var location = printf('%d:%d:%d', view.lnum, view.col, view.length)
-    if has_key(by_id, location) && by_id[location].replacement !=# view.replacement
-      ambiguous[location] = true
-    else
-      by_id[location] = view
-    endif
+    add(views, view)
   endfor
-  for location in keys(ambiguous)
-    remove(by_id, location)
-  endfor
-  return types.SortViews(values(by_id))
+  return types.UniqueViews(views)
 enddef
