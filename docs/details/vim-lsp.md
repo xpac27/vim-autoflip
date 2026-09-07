@@ -3,11 +3,12 @@
 ## 2026-09-07 20:10 CEST - Attachment-event fallback
 
 `User lsp_buffer_enabled` is the normal attachment trigger. In a Startify
-startup flow it can be missed after AutoFlip's `FileType` enable runs but
-before clangd has completed initialization. While vim-lsp is present but no
-running clangd is available, AutoFlip performs a bounded 100 ms retry for up
-to five seconds. The retry only reuses the existing refresh path; it sends no
-request until the adapter confirms that clangd is running.
+startup flow, `BufRead` can advance `changedtick` after AutoFlip's `FileType`
+enable without a `TextChanged` event, before clangd has completed
+initialization. While vim-lsp is present but no running clangd is available,
+AutoFlip performs a bounded 100 ms retry for up to five seconds. The retry
+refreshes that startup snapshot only while no request is pending, then sends
+no request until the adapter confirms that clangd is running.
 
 ## 2026-09-03 08:26 CEST - Best-effort AST requests
 

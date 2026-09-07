@@ -3,13 +3,14 @@
 ## 2026-09-07 20:10 CEST - Recover from missed clangd attachment events
 
 - Reproduced the Startify-open startup race with the user's normal Vim
-  configuration and C++ project: AutoFlip enabled before clangd reached
-  vim-lsp's running state, then received no usable follow-up notification.
+  configuration and C++ project: `BufRead` advanced `changedtick` after the
+  `FileType` enable without a `TextChanged` event, so the attachment retry
+  discarded itself as stale once clangd reached vim-lsp's running state.
 - Added a bounded 100 ms attachment retry (at most 50 attempts) while an
   enabled buffer waits for clangd. An explicit refresh or a vim-lsp event
   resets the budget; missing vim-lsp never starts this retry.
-- Added a regression that withholds the vim-lsp event, then confirms the
-  automatic retry requests and renders after attachment.
+- Added a regression that combines the missed vim-lsp event with this stale
+  startup snapshot, then confirms automatic retry requests and rendering.
 
 ## 2026-09-07 17:45 CEST - Verify late vim-lsp attachment recovery
 

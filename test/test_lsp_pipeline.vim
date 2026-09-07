@@ -61,6 +61,10 @@ g:autoflip_test_lsp.requests = []
 core.Enable()
 assert_match('waiting: no running clangd server is attached', core.Status())
 assert_equal([], g:autoflip_test_lsp.requests)
+# BufRead can advance changedtick after FileType enables the plugin without
+# emitting TextChanged, exactly as when Startify opens a file after startup.
+var startup_state = core.State()
+startup_state.changedtick -= 1
 g:autoflip_test_lsp.attached = true
 sleep 120m
 assert_equal('code-actions', g:autoflip_test_lsp.requests[0].kind)

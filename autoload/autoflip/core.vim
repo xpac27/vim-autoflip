@@ -86,7 +86,25 @@ def ScheduleAttachRetry(bufnr: number, state: dict<any>)
     return
   endif
   state.attach_retries += 1
-  ScheduleRefresh(bufnr, state, ATTACH_RETRY_DELAY_MS)
+  StopTimer(state, 'pending_timer')
+  var generation = state.generation
+  state.pending_timer = timer_start(ATTACH_RETRY_DELAY_MS, (_) => RetryAttach(bufnr, generation))
+enddef
+
+def RetryAttach(bufnr: number, generation: number)
+  if !bufexists(bufnr)
+    return
+  endif
+  var state = State(bufnr)
+  state.pending_timer = -1
+  if !state.enabled || state.generation != generation || bufnr != bufnr('%')
+    return
+  endif
+  # BufRead can advance changedtick after FileType enabled AutoFlip without a
+  # TextChanged event. No request is pending while attachment is unavailable,
+  # so this startup snapshot update cannot accept an edited-buffer response.
+  state.changedtick = getbufvar(bufnr, 'changedtick')
+  Refresh(false)
 enddef
 
 def SnapshotViewLines(bufnr: number, state: dict<any>)

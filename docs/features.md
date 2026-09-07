@@ -8,6 +8,8 @@
 - The retry remains inactive when vim-lsp itself is unavailable, stops after
   successful attachment, and can be restarted explicitly with
   `:AutoFlipRefresh`.
+- It accepts Vim's post-`FileType` startup `changedtick` update only before
+  any LSP request has been sent; normal edit staleness protection is unchanged.
 
 ## 2026-09-07 15:15 CEST - Qualified AST type equivalence
 

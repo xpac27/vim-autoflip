@@ -9,6 +9,11 @@ for a maximum of 50 attempts. The counter resets when clangd attaches, a
 vim-lsp event arrives, or the user explicitly refreshes. This keeps startup
 recovery reliable without a permanent background poll.
 
+The retry has its own callback because `BufRead` can advance `changedtick`
+after the `FileType` enable without a `TextChanged` event. Before any LSP
+request exists, it safely snapshots that value and resumes the ordinary
+refresh path; genuine buffer edits still invalidate callbacks by generation.
+
 ## 2026-09-03 08:26 CEST - Generic best-effort AST policy
 
 `best_effort.vim` performs one bounded masked/local-scope scan of the visible
