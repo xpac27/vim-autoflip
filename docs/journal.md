@@ -1,5 +1,16 @@
 # Engineering journal
 
+## 2026-09-07 20:10 CEST - Recover from missed clangd attachment events
+
+- Reproduced the Startify-open startup race with the user's normal Vim
+  configuration and C++ project: AutoFlip enabled before clangd reached
+  vim-lsp's running state, then received no usable follow-up notification.
+- Added a bounded 100 ms attachment retry (at most 50 attempts) while an
+  enabled buffer waits for clangd. An explicit refresh or a vim-lsp event
+  resets the budget; missing vim-lsp never starts this retry.
+- Added a regression that withholds the vim-lsp event, then confirms the
+  automatic retry requests and renders after attachment.
+
 ## 2026-09-07 17:45 CEST - Verify late vim-lsp attachment recovery
 
 - Confirmed that vim-lsp emits `User lsp_buffer_enabled` only after the

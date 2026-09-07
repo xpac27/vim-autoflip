@@ -12,6 +12,8 @@ const MODES = ['prefer-auto', 'show-deduced-types']
 const PREFER_AUTO_LEVELS = ['clang-tidy', 'best-effort']
 const CPP_FILETYPES = ['c', 'cpp']
 const CPP_EXTENSIONS = ['cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']
+const ATTACH_RETRY_DELAY_MS = 100
+const MAX_ATTACH_RETRIES = 50
 
 def NewState(bufnr: number): dict<any>
   return {
@@ -20,6 +22,7 @@ def NewState(bufnr: number): dict<any>
     generation: 0,
     changedtick: getbufvar(bufnr, 'changedtick'),
     pending_timer: -1,
+    attach_retries: 0,
     request_pending: false,
     refresh_after_reply: false,
     views: {},
@@ -78,6 +81,14 @@ def ScheduleRefresh(bufnr: number, state: dict<any>, delay: number)
   state.pending_timer = timer_start(delay, (_) => DebouncedRefresh(bufnr, generation))
 enddef
 
+def ScheduleAttachRetry(bufnr: number, state: dict<any>)
+  if state.attach_retries >= MAX_ATTACH_RETRIES
+    return
+  endif
+  state.attach_retries += 1
+  ScheduleRefresh(bufnr, state, ATTACH_RETRY_DELAY_MS)
+enddef
+
 def SnapshotViewLines(bufnr: number, state: dict<any>)
   var view_lines: dict<string> = {}
   for view in values(state.views)
@@ -130,6 +141,7 @@ export def Disable()
   state.generation += 1
   state.request_pending = false
   state.refresh_after_reply = false
+  state.attach_retries = 0
   render.Cleanup(bufnr, state)
   state.enabled = false
   ResetViewsAndReveal(state)
@@ -195,6 +207,9 @@ export def Refresh(force: bool = false)
   if !state.enabled
     return
   endif
+  if force
+    state.attach_retries = 0
+  endif
   var prefer_auto_level = PreferAutoLevel()
   if state.mode ==# 'prefer-auto' && index(PREFER_AUTO_LEVELS, prefer_auto_level) < 0
     state.status = 'error: invalid prefer-auto level: ' .. prefer_auto_level
@@ -219,8 +234,10 @@ export def Refresh(force: bool = false)
   if !lsp.IsAttached(bufnr)
     state.status = 'waiting: no running clangd server is attached'
     render.Render(bufnr, state, values(state.views))
+    ScheduleAttachRetry(bufnr, state)
     return
   endif
+  state.attach_retries = 0
   if state.mode ==# 'prefer-auto' && !lsp.SupportsCodeAction(bufnr)
     state.status = 'waiting: clangd does not advertise code actions'
     return
@@ -506,6 +523,7 @@ enddef
 export def OnLspEvent()
   var state = get(b:, 'autoflip_state', {})
   if !empty(state) && state.enabled
+    state.attach_retries = 0
     if state.request_pending
       state.refresh_after_reply = true
     else

@@ -51,7 +51,7 @@ assert_equal('inlay-hints', g:autoflip_test_lsp.requests[-1].kind)
 core.Disable()
 bwipe!
 
-# A late vim-lsp attachment refreshes an already-enabled buffer.
+# A late attachment retries even when vim-lsp fails to emit its event.
 new
 setlocal filetype=cpp
 setline(1, ['void f() {', '  std::vector<int>::iterator it = values.begin();', '}'])
@@ -62,8 +62,7 @@ core.Enable()
 assert_match('waiting: no running clangd server is attached', core.Status())
 assert_equal([], g:autoflip_test_lsp.requests)
 g:autoflip_test_lsp.attached = true
-core.OnLspEvent()
-sleep 20m
+sleep 120m
 assert_equal('code-actions', g:autoflip_test_lsp.requests[0].kind)
 assert_equal(1, len(core.State().views))
 core.Disable()

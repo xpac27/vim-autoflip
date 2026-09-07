@@ -1,5 +1,14 @@
 # Architecture
 
+## 2026-09-07 20:10 CEST - Bounded attachment retry
+
+`core.vim` treats vim-lsp's `User lsp_buffer_enabled` as the primary
+attachment signal. If it is missed during startup, an enabled buffer with an
+available vim-lsp dependency retries only the attachment check every 100 ms,
+for a maximum of 50 attempts. The counter resets when clangd attaches, a
+vim-lsp event arrives, or the user explicitly refreshes. This keeps startup
+recovery reliable without a permanent background poll.
+
 ## 2026-09-03 08:26 CEST - Generic best-effort AST policy
 
 `best_effort.vim` performs one bounded masked/local-scope scan of the visible

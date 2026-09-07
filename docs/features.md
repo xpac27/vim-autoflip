@@ -1,5 +1,14 @@
 # Features
 
+## 2026-09-07 20:10 CEST - Delayed clangd attachment recovery
+
+- An enabled C++ buffer now retries a missing clangd attachment every 100 ms,
+  for at most five seconds. This recovers normal startup flows where vim-lsp's
+  attachment event is missed.
+- The retry remains inactive when vim-lsp itself is unavailable, stops after
+  successful attachment, and can be restarted explicitly with
+  `:AutoFlipRefresh`.
+
 ## 2026-09-07 15:15 CEST - Qualified AST type equivalence
 
 - Best-effort `prefer-auto` now recognizes clangd AST responses where a
