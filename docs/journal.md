@@ -1,5 +1,18 @@
 # Engineering journal
 
+## 2026-09-07 15:15 CEST - Match qualified best-effort AST type spellings
+
+- Investigated clangd responses for explicit `TeamId` and `PlayerScore`
+  declarations initialized from `it.first` and `it.second`.
+- clangd reported the declaration type as locally spelled (`TeamId` or
+  `PlayerScore`) while reporting the initializer as fully qualified
+  (`fb::TeamId` or `fb::diceOnline::PlayerScore`); literal comparison rejected
+  otherwise-safe replacements.
+- The validator now compares the initializer against every spelling exposed by
+  clangd's nested declaration type nodes. This accepts equivalent qualified
+  types without weakening its exact AST-range or conversion-free checks.
+- Added regressions for both value-copy and const-reference member access.
+
 ## 2026-09-03 08:26 CEST - Replace specialized AST policies with best effort
 
 - Added the `best-effort` policy alongside default `clang-tidy`.

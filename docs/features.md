@@ -1,5 +1,13 @@
 # Features
 
+## 2026-09-07 15:15 CEST - Qualified AST type equivalence
+
+- Best-effort `prefer-auto` now recognizes clangd AST responses where a
+  declaration spells a type locally but the initializer reports its fully
+  qualified spelling.
+- Matching remains exact against type spellings within clangd's declaration
+  type subtree and preserves the existing conversion-free expression checks.
+
 ## 2026-09-03 08:26 CEST - Generic best-effort prefer-auto
 
 - `prefer-auto` now has two policies: default `clang-tidy` and opt-in

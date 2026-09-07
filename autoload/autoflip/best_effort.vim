@@ -183,6 +183,24 @@ def CanonicalType(node: dict<any>): string
   return strlen(quoted) >= 2 ? strpart(quoted, 1, strlen(quoted) - 2) : ''
 enddef
 
+def DeclarationTypeSpellings(node: dict<any>): list<string>
+  var result: list<string> = []
+  var spelling = CanonicalType(node)
+  if !empty(spelling)
+    add(result, spelling)
+  endif
+  var children = get(node, 'children', 0)
+  if type(children) != v:t_list
+    return result
+  endif
+  for child in children
+    if type(child) == v:t_dict && get(child, 'role', '') ==# 'type'
+      result += DeclarationTypeSpellings(child)
+    endif
+  endfor
+  return result
+enddef
+
 def CompactType(type_name: string): string
   return substitute(type_name, '\s\+', '', 'g')
 enddef
@@ -195,18 +213,21 @@ def ReferenceBase(type_name: string): string
 enddef
 
 def CompatibleTypes(candidate: dict<any>, type_node: dict<any>, expression: dict<any>): bool
-  var declared = CanonicalType(type_node)
   var inferred = CanonicalType(expression)
-  if empty(declared) || empty(inferred)
+  if empty(inferred)
     return false
   endif
-  if get(candidate, 'declarator', '') ==# '&'
-    return ReferenceBase(declared) ==# ReferenceBase(inferred)
-  endif
-  if get(candidate, 'declarator', '') ==# 'value'
-    return ReferenceBase(declared) ==# ReferenceBase(inferred)
-  endif
-  return CompactType(declared) ==# CompactType(inferred)
+  for declared in DeclarationTypeSpellings(type_node)
+    if get(candidate, 'declarator', '') ==# '&'
+        || get(candidate, 'declarator', '') ==# 'value'
+      if ReferenceBase(declared) ==# ReferenceBase(inferred)
+        return true
+      endif
+    elseif CompactType(declared) ==# CompactType(inferred)
+      return true
+    endif
+  endfor
+  return false
 enddef
 
 def DirectIdentity(expression: dict<any>, candidate: dict<any>): bool
