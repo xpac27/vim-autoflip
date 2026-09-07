@@ -12,7 +12,8 @@ recovery reliable without a permanent background poll.
 The retry has its own callback because `BufRead` can advance `changedtick`
 after the `FileType` enable without a `TextChanged` event. Before any LSP
 request exists, it safely snapshots that value and resumes the ordinary
-refresh path; genuine buffer edits still invalidate callbacks by generation.
+refresh path; a vim-lsp event preserves this callback while waiting for
+attachment. Genuine buffer edits still invalidate callbacks by generation.
 
 ## 2026-09-03 08:26 CEST - Generic best-effort AST policy
 

@@ -544,6 +544,8 @@ export def OnLspEvent()
     state.attach_retries = 0
     if state.request_pending
       state.refresh_after_reply = true
+    elseif state.status ==# 'waiting: no running clangd server is attached'
+      ScheduleAttachRetry(bufnr('%'), state)
     else
       ScheduleRefresh(bufnr('%'), state, 1)
     endif
